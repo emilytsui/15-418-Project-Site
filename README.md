@@ -1,1 +1,1 @@
-# 15-418 Project Site
+# Face Detection
