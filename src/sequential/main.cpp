@@ -16,8 +16,8 @@ int hash(int tag) {
 }
 
 int main() {
-    SeqHashTable<int,int> table = new SeqHashTable<int,int>(INPUT_SIZE/2, &hash);
-    std::vector<int> keys = new std::vector<int>();
+    SeqHashTable<int,int> table(INPUT_SIZE/2, &hash);
+    std::vector<int> keys;
     for (int i = 0; i < INPUT_SIZE; i++) {
         int key = rand();
         int val = rand();
