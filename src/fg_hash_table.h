@@ -4,7 +4,7 @@
 #include "linked_list_node.h"
 
 template <typename K, typename V>
-class SeqHashTable {
+class FgHashTable {
 private:
     std::vector<pthread_mutex_t> locks;
 
@@ -13,14 +13,14 @@ public:
     int (*hash_fn) (K);
     std::vector< LLNode<K,V>* > table;
 
-    SeqHashTable(int num_buckets, int (*hash) (K)) {
+    FgHashTable(int num_buckets, int (*hash) (K)) {
         table_size = num_buckets;
         hash_fn = hash;
         table = std::vector< LLNode<K,V>* >(num_buckets, NULL);
         locks.resize(num_buckets);
         for (int i = 0; i < num_buckets; i++)
         {
-            pthread_mutex_init(&locks[i]);
+            pthread_mutex_init(&locks[i], NULL);
         }
     }
 
