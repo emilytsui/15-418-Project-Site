@@ -37,6 +37,7 @@ void parseText(const std::string &filename)
 {
     std::ifstream infile;
     infile.open(filename.c_str());
+    input.resize(0);
     while(!infile.eof())
     {
         std::string str;
@@ -152,6 +153,7 @@ int main() {
     pthread_t threads[16];
     for (uint i = 0; i < testfiles.size(); i++) {
         printf("Correctness Testing file: %s\n", testfiles[i].c_str());
+        parseText(testfiles[i].c_str());
         SeqHashTable<int, int>* baseline = new SeqHashTable<int, int>(input.size() / 2, &hash);
         seqRun(baseline);
         for (uint j = 1; j <= 16; j *= 2)

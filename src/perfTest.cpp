@@ -25,7 +25,8 @@ const char *args[] = {"tests/uniform_all_test.txt",
                       "tests/chunked_test_InsDel.txt",
                       "tests/50p_del_test_InsDel.txt",
                       "tests/25p_del_test_InsDel.txt",
-                      "tests/10p_del_test_InsDel.txt"};
+                      "tests/10p_del_test_InsDel.txt",
+                      "tests/10p_del_all.txt"};
 std::vector<std::string> testfiles(args, args + sizeof(args)/sizeof(args[0]));
 
 int hash(int tag) {
@@ -43,6 +44,7 @@ void parseText(const std::string &filename)
 {
     std::ifstream infile;
     infile.open(filename.c_str());
+    input.resize(0);
     while(!infile.eof())
     {
         std::string str;
@@ -133,12 +135,13 @@ int main() {
 
     pthread_t threads[16];
     for (uint i = 0; i < testfiles.size(); i++) {
-        printf("Performance Testing file: %s\n", testfiles[i].c_str());
-        SeqHashTable<int, int>* baseline = new SeqHashTable<int, int>(input.size() / 2, &hash);
+        printf("\nPerformance Testing file: %s\n", testfiles[i].c_str());
+        parseText(testfiles[i].c_str());
+        SeqHashTable<int, int>* baseline = new SeqHashTable<int, int>(input.size() / 1000, &hash);
         int baseTime = seqRun(baseline);
         for (uint j = 1; j <= 16; j *= 2)
         {
-            FgHashTable<int, int>* htable = new FgHashTable<int, int>(input.size() / 2, &hash);
+            FgHashTable<int, int>* htable = new FgHashTable<int, int>(input.size() / 1000, &hash);
             numThreads = j;
             double startTime = CycleTimer::currentSeconds();
             for (uint id = 0; id < j; id++)
@@ -150,7 +153,7 @@ int main() {
                 pthread_join(threads[id], NULL);
             }
             double dt = CycleTimer::currentSeconds() - startTime;
-            printf("Fine-Grain Test complete in %f ms!\n", (1000.f * dt));
+            printf("%d Thread Fine-Grain Test complete in %f ms!\n", numThreads, (1000.f * dt));
             printf("%d Thread Speedup: %d\n", j, (baseTime / dt));
             delete(htable);
         }
