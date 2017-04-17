@@ -33,11 +33,10 @@ int hash(int tag) {
     return abs(hashVal);
 }
 
-std::vector<std::pair<Instr, std::pair<int, int> > > parseText(const std::string &filename)
+void parseText(const std::string &filename)
 {
     std::ifstream infile;
     infile.open(filename.c_str());
-    std::vector<std::pair<Instr, std::pair<int, int> > > instructions;
     while(!infile.eof())
     {
         std::string str;
@@ -66,10 +65,9 @@ std::vector<std::pair<Instr, std::pair<int, int> > > parseText(const std::string
             keyval.first = atoi(rest.substr(0, spcIdx).c_str());
             keyval.second = atoi(rest.substr(spcIdx + 1).c_str());
             task.second = keyval;
-            instructions.push_back(task);
+            input.push_back(task);
         }
     }
-    return instructions;
 }
 
 void* fgRun(void *arg)
@@ -154,7 +152,6 @@ int main() {
     pthread_t threads[16];
     for (uint i = 0; i < testfiles.size(); i++) {
         printf("Correctness Testing file: %s\n", testfiles[i].c_str());
-        input = parseText(testfiles[i]);
         SeqHashTable<int, int>* baseline = new SeqHashTable<int, int>(input.size() / 2, &hash);
         seqRun(baseline);
         for (uint j = 1; j <= 16; j *= 2)
@@ -174,4 +171,5 @@ int main() {
         }
         delete(baseline);
     }
+    printf("Correctness Tests Complete!\n");
 }
