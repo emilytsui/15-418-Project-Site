@@ -19,6 +19,8 @@ enum Instr {
 
 static int numThreads;
 static std::vector<std::pair<Instr, std::pair<int, int> > > input;
+SeqHashTable<int, int>* baseline;
+FgHashTable<int, int>* htable;
 
 const char *args[] = {"tests/uniform_all_test.txt",
                       "tests/uniform_test_InsDel.txt",
@@ -80,23 +82,32 @@ void parseText(const std::string &filename)
 
 void* fgRun(void* arg)
 {
-    FgHashTable<int, int>* htable = (FgHashTable<int, int>*) arg;
+    int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
-    int start = instrPerThread * pthread_self();
-    int end = start + instrPerThread;
+    int start = instrPerThread * id;
+    int end = (start + instrPerThread < input.size()) ? (start + instrPerThread) : input.size();
     for (int i = start; i < end; i++)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
+        LLNode<int, int>* res;
         switch(instr.first)
         {
             case insert:
                 htable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                assert(htable->remove(instr.second.first)->get_data() == instr.second.second);
+                res = htable->remove(instr.second.first); // Can fail
+                if (res != NULL && res->get_data() != instr.second.second)
+                {
+                    printf("Error: deletion failed!\n");
+                }
                 break;
             case lookup:
-                assert(htable->find(instr.second.first)->get_data() == instr.second.second);
+                res = htable->find(instr.second.first); // Can fail
+                if (res != NULL && res->get_data() != instr.second.second)
+                {
+                    printf("Error: lookup failed!\n");
+                }
                 break;
             default:
                 break;
@@ -134,19 +145,24 @@ double seqRun(SeqHashTable<int, int>* htable)
 int main() {
 
     pthread_t threads[16];
+    int ids[16];
+    for (uint z = 0; z < 16; z++)
+    {
+        ids[z] = z;
+    }
     for (uint i = 0; i < testfiles.size(); i++) {
         printf("\nPerformance Testing file: %s\n", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
-        SeqHashTable<int, int>* baseline = new SeqHashTable<int, int>(input.size() / 1000, &hash);
+        baseline = new SeqHashTable<int, int>(input.size() / 1000, &hash);
         int baseTime = seqRun(baseline);
         for (uint j = 1; j <= 16; j *= 2)
         {
-            FgHashTable<int, int>* htable = new FgHashTable<int, int>(input.size() / 1000, &hash);
+            htable = new FgHashTable<int, int>(input.size() / 1000, &hash);
             numThreads = j;
             double startTime = CycleTimer::currentSeconds();
             for (uint id = 0; id < j; id++)
             {
-                pthread_create(&threads[id], NULL, fgRun, (void*)htable);
+                pthread_create(&threads[id], NULL, fgRun, &ids[id]);
             }
             for (uint id = 0; id < j; id++)
             {
