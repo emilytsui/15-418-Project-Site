@@ -23,11 +23,11 @@ SeqHashTable<int, int>* baseline;
 FgHashTable<int, int>* htable;
 
 const char *args[] = {"tests/uniform_all_test.txt",
-                      "tests/chunked_test_InsDel.txt",
-                      "tests/50p_del_test_InsDel.txt", // 30
-                      // "tests/25p_del_test_InsDel.txt",
-                      "tests/25p_del_test_InsDel.txt", // 20
-                      // "tests/15p_del_test_InsDel.txt",
+                      "tests/chunked_all.txt",
+                      "tests/30p_del_all.txt",
+                      "tests/25p_del_all.txt",
+                      "tests/20p_del_all.txt",
+                      "tests/15p_del_all.txt",
                       "tests/10p_del_all.txt"};
 std::vector<std::string> testfiles(args, args + sizeof(args)/sizeof(args[0]));
 
@@ -97,17 +97,9 @@ void* fgRun(void* arg)
                 break;
             case del:
                 res = htable->remove(instr.second.first); // Can fail
-                if (res != NULL && res->get_data() != instr.second.second)
-                {
-                    printf("Error: deletion failed!\n");
-                }
                 break;
             case lookup:
                 res = htable->find(instr.second.first); // Can fail
-                if (res != NULL && res->get_data() != instr.second.second)
-                {
-                    printf("Error: lookup failed!\n");
-                }
                 break;
             default:
                 break;
@@ -122,16 +114,17 @@ double seqRun(SeqHashTable<int, int>* htable)
     for (int i = 0; i < input.size(); i++)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
+        LLNode<int, int>* res;
         switch(instr.first)
         {
             case insert:
                 htable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                assert(htable->remove(instr.second.first)->get_data() == instr.second.second);
+                res = htable->remove(instr.second.first);
                 break;
             case lookup:
-                assert(htable->find(instr.second.first)->get_data() == instr.second.second);
+                res = htable->find(instr.second.first);
                 break;
             default:
                 break;
