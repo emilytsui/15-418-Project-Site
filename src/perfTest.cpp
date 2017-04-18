@@ -23,11 +23,11 @@ SeqHashTable<int, int>* baseline;
 FgHashTable<int, int>* htable;
 
 const char *args[] = {"tests/uniform_all_test.txt",
-                      "tests/uniform_test_InsDel.txt",
                       "tests/chunked_test_InsDel.txt",
-                      "tests/50p_del_test_InsDel.txt",
-                      "tests/25p_del_test_InsDel.txt",
-                      "tests/10p_del_test_InsDel.txt",
+                      "tests/50p_del_test_InsDel.txt", // 30
+                      // "tests/25p_del_test_InsDel.txt",
+                      "tests/25p_del_test_InsDel.txt", // 20
+                      // "tests/15p_del_test_InsDel.txt",
                       "tests/10p_del_all.txt"};
 std::vector<std::string> testfiles(args, args + sizeof(args)/sizeof(args[0]));
 
@@ -154,7 +154,7 @@ int main() {
         printf("\nPerformance Testing file: %s\n", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
         baseline = new SeqHashTable<int, int>(input.size() / 1000, &hash);
-        int baseTime = seqRun(baseline);
+        double baseTime = seqRun(baseline);
         for (uint j = 1; j <= 16; j *= 2)
         {
             htable = new FgHashTable<int, int>(input.size() / 1000, &hash);
@@ -170,7 +170,7 @@ int main() {
             }
             double dt = CycleTimer::currentSeconds() - startTime;
             printf("%d Thread Fine-Grain Test complete in %f ms!\n", numThreads, (1000.f * dt));
-            printf("%d Thread Speedup: %d\n", j, (baseTime / dt));
+            printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
             delete(htable);
         }
         delete(baseline);

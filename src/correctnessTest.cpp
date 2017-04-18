@@ -17,6 +17,8 @@ enum Instr {
 
 static int numThreads;
 static std::vector<std::pair<Instr, std::pair<int, int> > > input;
+SeqHashTable<int, int>* baseline;
+FgHashTable<int, int>* htable;
 
 const char *args[] = {"tests/correctness1.txt",
                       "tests/correctness2.txt"};
@@ -73,10 +75,10 @@ void parseText(const std::string &filename)
 
 void* fgRun(void *arg)
 {
-    FgHashTable<int, int>* htable = (FgHashTable<int, int>*) arg;
+    int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
-    int start = instrPerThread * pthread_self();
-    int end = start + instrPerThread;
+    int start = instrPerThread * id;
+    int end = (start + instrPerThread < input.size()) ? (start + instrPerThread) : input.size();
     for (int i = start; i < end; i++)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
@@ -132,6 +134,7 @@ void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* 
             {
                 printf("Incorrect: Concurrent Hash Table doesn't contain (%d, %d)\n", curr->get_key(), curr->get_data());
             }
+            curr = curr->get_next();
         }
     }
     for (int j = 0; j < htable->table_size; j++)
@@ -144,6 +147,7 @@ void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* 
             {
                 printf("Incorrect: Concurrent Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
             }
+            curr = curr->get_next();
         }
     }
 }
@@ -151,18 +155,23 @@ void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* 
 int main() {
 
     pthread_t threads[16];
+    int ids[16];
+    for (uint z = 0; z < 16; z++)
+    {
+        ids[z] = z;
+    }
     for (uint i = 0; i < testfiles.size(); i++) {
         printf("Correctness Testing file: %s\n", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
-        SeqHashTable<int, int>* baseline = new SeqHashTable<int, int>(input.size() / 2, &hash);
+        baseline = new SeqHashTable<int, int>(1000, &hash);
         seqRun(baseline);
         for (uint j = 1; j <= 16; j *= 2)
         {
-            FgHashTable<int, int>* htable = new FgHashTable<int, int>(input.size() / 2, &hash);
+            htable = new FgHashTable<int, int>(1000, &hash);
             numThreads = j;
             for (uint id = 0; id < j; id++)
             {
-                pthread_create(&threads[id], NULL, fgRun, (void*)htable);
+                pthread_create(&threads[id], NULL, fgRun, &ids[id]);
             }
             for (uint id = 0; id < j; id++)
             {
