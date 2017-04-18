@@ -3,14 +3,14 @@ from random import shuffle
 import math
 
 def Test():
-	output = open("uniform_all_test.txt", "w")
-	numVals = 2000
+	output = open("chunked_test_all.txt", "w")
+	numVals = 250000
 	lookupRatio = 33 # out of 100
 	insertRatio = 33 # out of 100
 	numDelete = numVals
 	vals = []
 	vals = generateKeyVals(numVals, vals)
-	
+
 	# deleteVals = vals
 	# shuffle(deleteVals)
 	inserted = []
