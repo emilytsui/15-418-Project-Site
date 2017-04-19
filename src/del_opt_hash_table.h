@@ -18,6 +18,7 @@ private:
         return ((*(unsigned long*) node->get_next()) & 0x1);
     }
 
+    /* returns the "prev" of the node that has the key match */
     LLNode<K,V>* internal_find(LLNode<K,V>* head, K key) {
         LLNode<K,V>* prev = head;
         LLNode<K,V>* curr = head->get_next();
