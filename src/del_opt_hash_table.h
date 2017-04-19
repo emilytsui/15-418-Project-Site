@@ -15,20 +15,20 @@ private:
     }
 
     bool is_marked(LLNode<K,V>* node) {
-        return (node->get_next() & 0x1);
+        return ((*(long*) node->get_next()) & 0x1);
     }
 
     LLNode<K,V>* internal_find(LLNode<K,V>* head, K key) {
         LLNode<K,V>* prev = head;
-        LLNode<K,V>* curr = head.get_next();
+        LLNode<K,V>* curr = head->get_next();
         while (true)
         {
             if (curr == NULL)
             {
                 return NULL;
             }
-            LLNode<K,V>* next = curr.get_next();
-            if (prev.get_next() != curr)
+            LLNode<K,V>* next = curr->get_next();
+            if (prev->get_next() != curr)
             {
                 return internal_find(head, key);
             }

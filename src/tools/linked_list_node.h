@@ -16,6 +16,9 @@ public:
         next = n;
     }
 
+    LLNode(LLNode* n = NULL) {
+    }
+
     K get_key() {
         return key;
     }

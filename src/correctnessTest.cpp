@@ -8,6 +8,7 @@
 #include "tools/cycle_timer.h"
 #include "seq_hash_table.h"
 #include "fg_hash_table.h"
+#include "del_opt_hash_table.h"
 
 enum Instr {
     insert,
@@ -19,6 +20,7 @@ static int numThreads;
 static std::vector<std::pair<Instr, std::pair<int, int> > > input;
 SeqHashTable<int, int>* baseline;
 FgHashTable<int, int>* htable;
+DelOptHashTable<int, int>* delOptTable;
 
 const char *args[] = {"tests/correctness1.txt",
                       "tests/correctness2.txt"};
@@ -73,6 +75,32 @@ void parseText(const std::string &filename)
     }
 }
 
+void* delOptRun(void *arg) {
+    int id = *(int*)arg;
+    int instrPerThread = input.size() / numThreads;
+    int start = instrPerThread * id;
+    int end = (start + instrPerThread < input.size()) ? (start + instrPerThread) : input.size();
+    for (int i = start; i < end; i++)
+    {
+        std::pair<Instr, std::pair<int, int> > instr = input[i];
+        switch(instr.first)
+        {
+            case insert:
+                delOptTable->insert(instr.second.first, instr.second.second);
+                break;
+            case del:
+                assert(delOptTable->remove(instr.second.first)->get_data() == instr.second.second);
+                break;
+            case lookup:
+                assert(delOptTable->find(instr.second.first)->get_data() == instr.second.second);
+                break;
+            default:
+                break;
+        }
+    }
+    pthread_exit(NULL);
+}
+
 void* fgRun(void *arg)
 {
     int id = *(int*)arg;
@@ -122,8 +150,7 @@ void seqRun(SeqHashTable<int, int>* htable)
     }
 }
 
-void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* htable)
-{
+void testDelOptCorrectness(SeqHashTable<int, int>* baseline, DelOptHashTable<int, int>* htable) {
     for (int i = 0; i < baseline->table_size; i++)
     {
         LLNode<int, int>* curr = baseline->table[i];
@@ -132,7 +159,7 @@ void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* 
             LLNode<int, int>* res = htable->find(curr->get_key());
             if(res == NULL || res->get_data() != curr->get_data())
             {
-                printf("Incorrect: Concurrent Hash Table doesn't contain (%d, %d)\n", curr->get_key(), curr->get_data());
+                printf("Incorrect: Lock-free Hash Table doesn't contain (%d, %d)\n", curr->get_key(), curr->get_data());
             }
             curr = curr->get_next();
         }
@@ -145,7 +172,37 @@ void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* 
             LLNode<int, int>* res = baseline->find(curr->get_key());
             if(res == NULL || res->get_data() != curr->get_data())
             {
-                printf("Incorrect: Concurrent Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
+                printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
+            }
+            curr = curr->get_next();
+        }
+    }
+}
+
+void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* htable)
+{
+    for (int i = 0; i < baseline->table_size; i++)
+    {
+        LLNode<int, int>* curr = baseline->table[i];
+        while(curr != NULL)
+        {
+            LLNode<int, int>* res = htable->find(curr->get_key());
+            if(res == NULL || res->get_data() != curr->get_data())
+            {
+                printf("Incorrect: Lock-based Hash Table doesn't contain (%d, %d)\n", curr->get_key(), curr->get_data());
+            }
+            curr = curr->get_next();
+        }
+    }
+    for (int j = 0; j < htable->table_size; j++)
+    {
+        LLNode<int, int>* curr = htable->table[j];
+        while(curr != NULL)
+        {
+            LLNode<int, int>* res = baseline->find(curr->get_key());
+            if(res == NULL || res->get_data() != curr->get_data())
+            {
+                printf("Incorrect: Lock-based Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
             }
             curr = curr->get_next();
         }
@@ -161,7 +218,7 @@ int main() {
         ids[z] = z;
     }
     for (uint i = 0; i < testfiles.size(); i++) {
-        printf("Correctness Testing file: %s\n", testfiles[i].c_str());
+        printf("Correctness Testing file: %s\n for fine-grained hash table", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
         baseline = new SeqHashTable<int, int>(1000, &hash);
         seqRun(baseline);
@@ -178,6 +235,25 @@ int main() {
                 pthread_join(threads[id], NULL);
             }
             testFgCorrectness(baseline, htable);
+            delete(htable);
+        }
+        delete(baseline);
+    }
+    for (uint i = 0; i < testfiles.size(); i++) {
+        printf("Correctness Testing file: %s\n for delete-optimal lock-free hash table", testfiles[i].c_str());
+        for (uint j = 1; j <= 16; j *= 2)
+        {
+            delOptTable = new DelOptHashTable<int, int>(1000, &hash);
+            numThreads = j;
+            for (uint id = 0; id < j; id++)
+            {
+                pthread_create(&threads[id], NULL, delOptRun, &ids[id]);
+            }
+            for (uint id = 0; id < j; id++)
+            {
+                pthread_join(threads[id], NULL);
+            }
+            testDelOptCorrectness(baseline, delOptTable);
             delete(htable);
         }
         delete(baseline);
