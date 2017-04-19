@@ -6,9 +6,9 @@ private:
 
     K key;
     V data;
-    LLNode<K,V>* next;
 
 public:
+    LLNode<K,V>* next;
 
     LLNode(K ke, V val, LLNode* n = NULL) {
         key = ke;
@@ -23,20 +23,27 @@ public:
         return key;
     }
 
+    LLNode<K,V>* set_key(K k) {
+        key = k;
+        return this;
+    }
+
     V get_data() {
         return data;
     }
 
-    void set_data(V item) {
+    LLNode<K,V>* set_data(V item) {
         data = item;
+        return this;
     }
 
     LLNode* get_next() {
         return next;
     }
 
-    void set_next(LLNode* n) {
+    LLNode* set_next(LLNode* n) {
         next = n;
+        return this;
     }
 
 };

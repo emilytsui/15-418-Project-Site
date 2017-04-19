@@ -218,7 +218,7 @@ int main() {
         ids[z] = z;
     }
     for (uint i = 0; i < testfiles.size(); i++) {
-        printf("Correctness Testing file: %s\n for fine-grained hash table", testfiles[i].c_str());
+        printf("Correctness Testing file: %s for fine-grained hash table\n", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
         baseline = new SeqHashTable<int, int>(1000, &hash);
         seqRun(baseline);
@@ -240,7 +240,7 @@ int main() {
         delete(baseline);
     }
     for (uint i = 0; i < testfiles.size(); i++) {
-        printf("Correctness Testing file: %s\n for delete-optimal lock-free hash table", testfiles[i].c_str());
+        printf("Correctness Testing file: %s for delete-optimal lock-free hash table\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
             delOptTable = new DelOptHashTable<int, int>(1000, &hash);

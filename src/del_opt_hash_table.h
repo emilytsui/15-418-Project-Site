@@ -6,16 +6,16 @@ template <typename K, typename V>
 class DelOptHashTable {
 private:
 
-    void mark(LLNode<K,V>* node) {
-        node->set_next(node->get_next() | 0x1);
+    LLNode<K,V>* mark(LLNode<K,V>* node) {
+        return node->set_next((LLNode<K,V>*) (*(unsigned long*)node->get_next() | 0x1));
     }
 
-    void unmark(LLNode<K,V>* node) {
-        node->set_next(node->get_next() & (-1 << 1));
+    LLNode<K,V>* unmark(LLNode<K,V>* node) {
+        return node->set_next((LLNode<K,V>*) (*(unsigned long*)node->get_next() & (-1 << 1)));
     }
 
     bool is_marked(LLNode<K,V>* node) {
-        return ((*(long*) node->get_next()) & 0x1);
+        return ((*(unsigned long*) node->get_next()) & 0x1);
     }
 
     LLNode<K,V>* internal_find(LLNode<K,V>* head, K key) {
@@ -36,7 +36,7 @@ private:
             {
                 if (curr->get_key() == key)
                 {
-                    return curr;
+                    return prev;
                 }
             }
             prev = curr;
@@ -69,8 +69,11 @@ public:
             {
                 if (is_marked(curr))
                 {
-                    if (__sync_bool_compare_and_swap(&(prev->get_next()->get_key()), curr->get_key(), key) &&
-                        __sync_bool_compare_and_swap(&(prev->get_next()->get_data()), curr->get_data(), val))
+                    // if (__sync_bool_compare_and_swap(&(prev->get_next()->get_key()), curr->get_key(), key) &&
+                    //     __sync_bool_compare_and_swap(&(prev->get_next()->get_data()), curr->get_data(), val))
+                    // {
+                    if (__sync_bool_compare_and_swap(&(prev->next), curr, curr->set_key(key)) &&
+                        __sync_bool_compare_and_swap(&(prev->next), curr, curr->set_data(val)))
                     {
                         unmark(curr);
                         return true;
@@ -91,55 +94,19 @@ public:
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* head = table[hashIndex];
         while(true) {
-            LLNode<K,V>* curr = internal_find(head, key);
+            LLNode<K,V>* prev = internal_find(head, key);
+            LLNode<K,V>* curr = prev->get_next();
             if (curr == NULL) {
                 return NULL;
             }
-            if (!__sync_bool_compare_and_swap(&internal_find(head, key), curr, mark(curr))) {
+            if (!__sync_bool_compare_and_swap(&prev, curr, mark(curr))) {
                 return curr;
             }
         }
-        // int hashIndex = hash_fn(key) % table_size;
-        // LLNode<K,V>* result = NULL;
-        // LLNode<K,V>* curr = table[hashIndex];
-        // LLNode<K,V>* prev = NULL;
-        // while(curr != NULL)
-        // {
-        //     if (curr->get_key() == key) {
-        //         result = curr;
-        //         if (prev != NULL)
-        //         {
-        //             prev->set_next(result->get_next());
-        //         }
-        //         else
-        //         {
-        //             table[hashIndex] = result->get_next();
-        //         }
-        //         return result;
-        //     }
-        //     else {
-        //         prev = curr;
-        //         curr = curr->get_next();
-        //     }
-        // }
-        // return result;
     }
 
     LLNode<K,V>* find(K key) {
         int hashIndex = hash_fn(key) % table_size;
         return internal_find(table[hashIndex], key);
-        // LLNode<K,V>* curr = table[hashIndex];
-        // LLNode<K,V>* prev = NULL;
-        // while(curr != NULL)
-        // {
-        //     if (curr->get_key() == key) {
-        //         return curr;
-        //     }
-        //     else {
-        //         prev = curr;
-        //         curr = curr->get_next();
-        //     }
-        // }
-        // return NULL;
     }
 };

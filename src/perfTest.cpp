@@ -174,7 +174,7 @@ int main() {
     }
     double baseTime;
     for (uint i = 0; i < testfiles.size(); i++) {
-        printf("\nPerformance Testing file: %s\n on fine-grained lock-based hash table", testfiles[i].c_str());
+        printf("\nPerformance Testing file: %s on fine-grained lock-based hash table\n", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
         baseline = new SeqHashTable<int, int>(input.size() / 1000, &hash);
         baseTime = seqRun(baseline);
@@ -199,7 +199,7 @@ int main() {
         delete(baseline);
     }
     for (uint i = 0; i < testfiles.size(); i++) {
-        printf("\nPerformance Testing file: %s\n on delete-optimal lock-free hash table", testfiles[i].c_str());
+        printf("\nPerformance Testing file: %s on delete-optimal lock-free hash table\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
             delOptTable = new DelOptHashTable<int, int>(input.size() / 1000, &hash);
