@@ -6,22 +6,42 @@ template <typename K, typename V>
 class DelOptHashTable {
 private:
 
-    LLNode<K,V>* internal_find(LLNode<K,V>* head, K key) {
-try_again:
-        LLNode<K,V>* prev = head;
-
-    }
-
     void mark(LLNode<K,V>* node) {
-
+        node->set_next(node->get_next() | 0x1);
     }
 
     void unmark(LLNode<K,V>* node) {
-
+        node->set_next(node->get_next() & (-1 << 1));
     }
 
     bool is_marked(LLNode<K,V>* node) {
+        return (node->get_next() & 0x1);
+    }
 
+    LLNode<K,V>* internal_find(LLNode<K,V>* head, K key) {
+        LLNode<K,V>* prev = head;
+        LLNode<K,V>* curr = head.get_next();
+        while (true)
+        {
+            if (curr == NULL)
+            {
+                return NULL;
+            }
+            LLNode<K,V>* next = curr.get_next();
+            if (prev.get_next() != curr)
+            {
+                return internal_find(head, key);
+            }
+            if (!is_marked(curr))
+            {
+                if (curr->get_key() == key)
+                {
+                    return curr;
+                }
+            }
+            prev = curr;
+            curr = next;
+        }
     }
 
 public:
@@ -32,20 +52,36 @@ public:
     DelOptHashTable(int num_buckets, int (*hash) (K)) {
         table_size = num_buckets;
         hash_fn = hash;
-        table = std::vector< LLNode<K,V>* >(num_buckets, NULL);
+        table = std::vector< LLNode<K,V>* >(num_buckets, new LLNode<K, V>());
     }
 
-    void insert(K key, V val) {
+    bool insert(K key, V val) {
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* head = table[hashIndex];
+        LLNode<K,V>* prev = head;
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         while(true) {
             if (internal_find(head, key) != NULL) {
                 return false;
             }
-            LLNode<K,V>* curr = head;
-            node->set_next(table[hashIndex]);
-            if (__sync_bool_compare_and_swap(&table[hashIndex], curr, node)) {
+            LLNode<K,V>* curr = head->get_next();
+            while (curr != NULL)
+            {
+                if (is_marked(curr))
+                {
+                    if (__sync_bool_compare_and_swap(&(prev->get_next()->get_key()), curr->get_key(), key) &&
+                        __sync_bool_compare_and_swap(&(prev->get_next()->get_data()), curr->get_data(), val))
+                    {
+                        unmark(curr);
+                        return true;
+                    }
+                }
+                prev = curr;
+                curr = curr->get_next();
+            }
+            node->set_next(curr);
+            if (__sync_bool_compare_and_swap(&table[hashIndex], curr, node))
+            {
                 return true;
             }
         }
@@ -57,13 +93,11 @@ public:
         while(true) {
             LLNode<K,V>* curr = internal_find(head, key);
             if (curr == NULL) {
-                return false;
+                return NULL;
             }
             if (!__sync_bool_compare_and_swap(&internal_find(head, key), curr, mark(curr))) {
-                continue;
+                return curr;
             }
-
-
         }
         // int hashIndex = hash_fn(key) % table_size;
         // LLNode<K,V>* result = NULL;
