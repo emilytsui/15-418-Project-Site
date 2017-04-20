@@ -89,11 +89,9 @@ void* delOptRun(void *arg) {
                 delOptTable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                printf("Found element: %p", delOptTable->remove(instr.second.first));
                 assert(delOptTable->remove(instr.second.first)->get_data() == instr.second.second);
                 break;
             case lookup:
-                printf("Lookup found: %p\n", delOptTable->find(instr.second.first));
                 assert(delOptTable->find(instr.second.first)->get_data() == instr.second.second);
                 break;
             default:
