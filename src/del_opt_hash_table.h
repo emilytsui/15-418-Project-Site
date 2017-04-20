@@ -31,19 +31,19 @@ private:
     /* returns the "prev" of the node that has the key match */
     LLNode<K,V>* internal_find(LLNode<K,V>* head, K key) {
         LLNode<K,V>* prev = noMark(head);
-        printf("Check 1\n");
+        // printf("Check 1\n");
         LLNode<K,V>* curr = noMark(head->get_next());
         while (true)
         {
-            printf("Prev: %p\n", prev);
-            printf("Curr: %p\n", curr);
+            // printf("Prev: %p\n", prev);
+            // printf("Curr: %p\n", curr);
             if (curr == NULL)
             {
                 return NULL;
             }
-            printf("Check 2\n");
+            // printf("Check 2\n");
             LLNode<K,V>* next = noMark(curr->get_next());
-            printf("Check 3\n");
+            // printf("Check 3\n");
             if (noMark(prev->get_next()) != curr)
             {
                 return internal_find(head, key);
@@ -57,7 +57,7 @@ private:
             }
             prev = curr;
             curr = next;
-            printf("Check 4\n");
+            // printf("Check 4\n");
         }
     }
 
@@ -69,7 +69,7 @@ public:
     DelOptHashTable(int num_buckets, int (*hash) (K)) {
         table_size = num_buckets;
         hash_fn = hash;
-        table = std::vector< LLNode<K,V>* >(num_buckets, new LLNode<K, V>());
+        table = std::vector< LLNode<K,V>* >(num_buckets, new LLNode<K, V>(0, 0, NULL)); // dummy values
     }
 
     bool insert(K key, V val) {
@@ -82,6 +82,7 @@ public:
             if (internal_find(head, key) != NULL) {
                 return false;
             }
+            printf("Finished internal find!\n");
             LLNode<K,V>* curr = noMark(head->get_next());
             while (curr != NULL)
             {
@@ -104,8 +105,9 @@ public:
                 prev = curr;
                 curr = noMark(curr->get_next());
             }
+            curr = noMark(head->get_next());
             node->set_next(curr);
-            if (__sync_bool_compare_and_swap(&table[hashIndex], curr, node))
+            if (__sync_bool_compare_and_swap(&(table[hashIndex]->next), curr, node))
             {
                 return true;
             }

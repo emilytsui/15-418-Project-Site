@@ -196,9 +196,6 @@ int main() {
             printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
             delete(htable);
         }
-        delete(baseline);
-    }
-    for (uint i = 0; i < testfiles.size(); i++) {
         printf("\nPerformance Testing file: %s on delete-optimal lock-free hash table\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
@@ -218,5 +215,6 @@ int main() {
             printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
             delete(delOptTable);
         }
+        delete(baseline);
     }
 }

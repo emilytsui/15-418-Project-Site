@@ -89,9 +89,11 @@ void* delOptRun(void *arg) {
                 delOptTable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
+                printf("Found element: %p", delOptTable->remove(instr.second.first));
                 assert(delOptTable->remove(instr.second.first)->get_data() == instr.second.second);
                 break;
             case lookup:
+                printf("Lookup found: %p\n", delOptTable->find(instr.second.first));
                 assert(delOptTable->find(instr.second.first)->get_data() == instr.second.second);
                 break;
             default:
@@ -237,9 +239,6 @@ int main() {
             testFgCorrectness(baseline, htable);
             delete(htable);
         }
-        delete(baseline);
-    }
-    for (uint i = 0; i < testfiles.size(); i++) {
         printf("Correctness Testing file: %s for delete-optimal lock-free hash table\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
