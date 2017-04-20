@@ -7,29 +7,44 @@ class DelOptHashTable {
 private:
 
     LLNode<K,V>* mark(LLNode<K,V>* node) {
-        return node->set_next((LLNode<K,V>*) (*(unsigned long*)node->get_next() | 0x1));
+        return node->set_next((LLNode<K,V>*)((unsigned long) node->get_next() | 0x1));
     }
 
     LLNode<K,V>* unmark(LLNode<K,V>* node) {
-        return node->set_next((LLNode<K,V>*) (*(unsigned long*)node->get_next() & (-1 << 1)));
+        return node->set_next((LLNode<K,V>*)((unsigned long) node->get_next() & (-1 << 1)));
     }
 
     bool is_marked(LLNode<K,V>* node) {
-        return ((*(unsigned long*) node->get_next()) & 0x1);
+        return (((unsigned long)node->get_next()) & 0x1);
+    }
+
+    LLNode<K, V>* noMark(LLNode<K,V>* node)
+    {
+        return (LLNode<K, V>*)((unsigned long)node & (-1 << 1));
+    }
+
+    LLNode<K, V>* withMark(LLNode<K,V>* node)
+    {
+        return (LLNode<K, V>*)((unsigned long)node | 0x1);
     }
 
     /* returns the "prev" of the node that has the key match */
     LLNode<K,V>* internal_find(LLNode<K,V>* head, K key) {
-        LLNode<K,V>* prev = head;
-        LLNode<K,V>* curr = head->get_next();
+        LLNode<K,V>* prev = noMark(head);
+        printf("Check 1\n");
+        LLNode<K,V>* curr = noMark(head->get_next());
         while (true)
         {
+            printf("Prev: %p\n", prev);
+            printf("Curr: %p\n", curr);
             if (curr == NULL)
             {
                 return NULL;
             }
-            LLNode<K,V>* next = curr->get_next();
-            if (prev->get_next() != curr)
+            printf("Check 2\n");
+            LLNode<K,V>* next = noMark(curr->get_next());
+            printf("Check 3\n");
+            if (noMark(prev->get_next()) != curr)
             {
                 return internal_find(head, key);
             }
@@ -37,11 +52,12 @@ private:
             {
                 if (curr->get_key() == key)
                 {
-                    return prev;
+                    return curr;
                 }
             }
             prev = curr;
             curr = next;
+            printf("Check 4\n");
         }
     }
 
@@ -57,15 +73,16 @@ public:
     }
 
     bool insert(K key, V val) {
+        printf("In Insert!\n");
         int hashIndex = hash_fn(key) % table_size;
-        LLNode<K,V>* head = table[hashIndex];
-        LLNode<K,V>* prev = head;
+        LLNode<K,V>* head = noMark(table[hashIndex]);
+        LLNode<K,V>* prev = noMark(head);
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         while(true) {
             if (internal_find(head, key) != NULL) {
                 return false;
             }
-            LLNode<K,V>* curr = head->get_next();
+            LLNode<K,V>* curr = noMark(head->get_next());
             while (curr != NULL)
             {
                 if (is_marked(curr))
@@ -73,15 +90,19 @@ public:
                     // if (__sync_bool_compare_and_swap(&(prev->get_next()->get_key()), curr->get_key(), key) &&
                     //     __sync_bool_compare_and_swap(&(prev->get_next()->get_data()), curr->get_data(), val))
                     // {
-                    if (__sync_bool_compare_and_swap(&(prev->next), curr, curr->set_key(key)) &&
-                        __sync_bool_compare_and_swap(&(prev->next), curr, curr->set_data(val)))
+                    if (__sync_bool_compare_and_swap(&(prev->next), curr, curr->set_key(key)->set_data(val))) // Without mark
+                    {
+                        unmark(curr);
+                        return true;
+                    }
+                    else if (__sync_bool_compare_and_swap(&(prev->next), withMark(curr), withMark(curr->set_key(key)->set_data(val)))) // With mark
                     {
                         unmark(curr);
                         return true;
                     }
                 }
                 prev = curr;
-                curr = curr->get_next();
+                curr = noMark(curr->get_next());
             }
             node->set_next(curr);
             if (__sync_bool_compare_and_swap(&table[hashIndex], curr, node))
@@ -92,22 +113,31 @@ public:
     }
 
     LLNode<K,V>* remove(K key) {
+        printf("In remove!\n");
         int hashIndex = hash_fn(key) % table_size;
-        LLNode<K,V>* head = table[hashIndex];
+        LLNode<K,V>* head = noMark(table[hashIndex]);
         while(true) {
-            LLNode<K,V>* prev = internal_find(head, key);
-            LLNode<K,V>* curr = prev->get_next();
-            if (curr == NULL) {
+            if (internal_find(head, key) == NULL)
+            {
                 return NULL;
             }
-            if (!__sync_bool_compare_and_swap(&prev, curr, mark(curr))) {
+            LLNode<K,V>* prev = head;
+            LLNode<K,V>* curr = noMark(prev->get_next());
+            while (curr != NULL && curr->get_key() != key)
+            {
+                prev = curr;
+                curr = noMark(curr->get_next());
+            }
+            if (!__sync_bool_compare_and_swap(&(prev->next), curr, mark(curr)) && 
+                !__sync_bool_compare_and_swap(&(prev->next), withMark(curr), withMark(mark(curr)))) { // Fix Me!
                 return curr;
             }
         }
     }
 
     LLNode<K,V>* find(K key) {
+        printf("In lookup!\n");
         int hashIndex = hash_fn(key) % table_size;
-        return internal_find(table[hashIndex], key);
+        return internal_find(noMark(table[hashIndex]), key);
     }
 };
