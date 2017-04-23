@@ -98,9 +98,11 @@ void* delOptRun(void* arg) {
                 break;
             case del:
                 res = delOptTable->remove(instr.second.first); // Can fail
+                printf("Deleted node: %p\n", res);
                 break;
             case lookup:
                 res = delOptTable->find(instr.second.first); // Can fail
+                printf("Lookup returned: %p\n", res);
                 break;
             default:
                 break;

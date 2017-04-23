@@ -166,7 +166,7 @@ void testDelOptCorrectness(SeqHashTable<int, int>* baseline, DelOptHashTable<int
     }
     for (int j = 0; j < htable->table_size; j++)
     {
-        LLNode<int, int>* curr = htable->table[j];
+        LLNode<int, int>* curr = htable->table[j]->get_next();
         while(curr != NULL)
         {
             LLNode<int, int>* res = baseline->find(curr->get_key());
