@@ -24,18 +24,6 @@ public:
         }
     }
 
-    ~FgHashTable() {
-        for (int i = 0; i < table.size(); i++) {
-            LLNode<K,V>* curr = table[i];
-            while(curr != NULL) {
-                LLNode<K,V>* del = curr;
-                curr = curr->get_next();
-                delete del;
-            }
-        }
-        table.clear();
-    }
-
     void insert(K key, V val) {
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         int hashIndex = hash_fn(key) % table_size;

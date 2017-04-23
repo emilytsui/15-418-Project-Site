@@ -76,6 +76,7 @@ void parseText(const std::string &filename)
 }
 
 void* delOptRun(void *arg) {
+    printf("In delete Optimal\n");
     int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
     int start = instrPerThread * id;
@@ -171,7 +172,7 @@ void testDelOptCorrectness(SeqHashTable<int, int>* baseline, DelOptHashTable<int
         while(curr != NULL)
         {
             LLNode<int, int>* res = baseline->find(curr->get_key());
-            printf("%p\n", curr);
+            // printf("%p\n", curr);
             if(res == NULL || res->get_data() != curr->get_data())
             {
                 printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());

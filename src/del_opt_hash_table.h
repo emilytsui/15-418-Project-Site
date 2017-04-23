@@ -95,18 +95,6 @@ public:
         table = std::vector< LLNode<K,V>* >(num_buckets, new LLNode<K, V>(0, 0, NULL)); // dummy values
     }
 
-    ~DelOptHashTable() {
-        for (int i = 0; i < table.size(); i++) {
-            LLNode<K,V>* curr = table[i];
-            while(curr != NULL) {
-                LLNode<K,V>* del = curr;
-                curr = curr->get_next();
-                delete del;
-            }
-        }
-        table.clear();
-    }
-
     bool insert(K key, V val) {
         // printf("In Insert!\n");
         int hashIndex = hash_fn(key) % table_size;
