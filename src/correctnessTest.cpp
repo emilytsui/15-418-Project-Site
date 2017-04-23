@@ -167,10 +167,11 @@ void testDelOptCorrectness(SeqHashTable<int, int>* baseline, DelOptHashTable<int
     for (int j = 0; j < htable->table_size; j++)
     {
         LLNode<int, int>* curr = htable->table[j]->get_next();
-        printf("Next pointer: %p\n", curr);
+        // printf("Next pointer: %p\n", curr);
         while(curr != NULL)
         {
             LLNode<int, int>* res = baseline->find(curr->get_key());
+            printf("%p\n", curr);
             if(res == NULL || res->get_data() != curr->get_data())
             {
                 printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
@@ -252,7 +253,7 @@ int main() {
                 pthread_join(threads[id], NULL);
             }
             testDelOptCorrectness(baseline, delOptTable);
-            delete(htable);
+            delete(delOptTable);
         }
         delete(baseline);
     }
