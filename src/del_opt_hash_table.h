@@ -29,44 +29,58 @@ private:
     }
 
     /* returns the "prev" of the node that has the key match */
-    LLNode<K,V>* internal_find(LLNode<K,V>* head, K key) {
+    std::pair<LLNode<K,V>*, LLNode<K,V>*> internal_find(LLNode<K,V>* head, K key) {
         LLNode<K,V>* prev = noMark(head);
         // printf("Check 1\n");
         LLNode<K,V>* curr = noMark(head->get_next());
+        std::pair<LLNode<K,V>*, LLNode<K,V>*> res;
         while (true)
         {
             // printf("Prev: %p\n", prev);
             // printf("Curr: %p\n", curr);
             if (curr == NULL)
             {
-                return NULL;
+                res.first = NULL;
+                res.second = NULL;
+                return res;
             }
             // printf("Check 2\n");
+            printf("Curr: %p\n", curr);
             LLNode<K,V>* next = noMark(curr->get_next());
             // printf("Check 3\n");
+            printf("Prev: %p\n", prev);
             if (noMark(prev->get_next()) != curr)
             {
                 return internal_find(head, key);
             }
+            printf("Check change!\n");
             if (!is_marked(curr))
             {
+                printf("Case 1\n");
                 if (curr->get_key() == key)
                 {
-                    return curr;
+                    res.first = prev;
+                    res.second = curr;
+                    return res;
                 }
+                prev = curr;
+                curr = next;
             }
             else
             {
-                if (__sync_bool_compare_and_swap(&(prev->next), curr, curr->next)) { // Fix Me!
-                    return curr;
+                printf("Case 2\n");
+                if (__sync_bool_compare_and_swap(&(prev->next), curr, noMark(curr->next))) {
+                    printf("Case 2.1\n");
+                    res.first = prev;
+                    res.second = curr;
+                    return res;
                 }
                 else
                 {
+                    printf("Case 2.2\n");
                     return internal_find(head, key);
                 }
             }
-            prev = curr;
-            curr = next;
             // printf("Check 4\n");
         }
     }
@@ -89,7 +103,7 @@ public:
         LLNode<K,V>* curr = noMark(head->get_next());
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         while(true) {
-            if (internal_find(head, key) != NULL) {
+            if (internal_find(head, key).second != NULL) {
                 return false;
             }
             // printf("Finished internal find!\n");
@@ -104,35 +118,33 @@ public:
         }
     }
 
-    LLNode<K,V>* remove(K key) {
+    bool remove(K key) {
         printf("In remove!\n");
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* head = noMark(table[hashIndex]);
+        LLNode<K,V>* prev;
+        LLNode<K,V>* curr;
         while(true) {
-            if (internal_find(head, key) == NULL)
+            std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
+            prev = noMark(res.first);
+            curr = noMark(res.second);
+            if (curr == NULL)
             {
                 printf("Didn't find to remove\n");
-                return NULL;
-            }
-            LLNode<K,V>* prev = head;
-            LLNode<K,V>* curr = noMark(prev->get_next());
-            while (curr != NULL && curr->get_key() != key)
-            {
-                prev = curr;
-                curr = noMark(curr->get_next());
+                return false;
             }
             if (!__sync_bool_compare_and_swap(&(curr->next), noMark(curr->next), withMark(curr->next)))
             {
                 continue;
             }
-            if (__sync_bool_compare_and_swap(&(prev->next), withMark(curr), curr->next)) {
+            if (__sync_bool_compare_and_swap(&(prev->next), noMark(curr), curr->next)) {
                 // garbage collection
             }
             else
             {
-                return internal_find(head, key);
+                internal_find(head, key);
             }
-            return curr;
+            return true;
             printf("End of remove loop\n");
         }
     }
@@ -140,6 +152,6 @@ public:
     LLNode<K,V>* find(K key) {
         printf("In lookup!\n");
         int hashIndex = hash_fn(key) % table_size;
-        return internal_find(noMark(table[hashIndex]), key);
+        return internal_find(noMark(table[hashIndex]), key).second;
     }
 };

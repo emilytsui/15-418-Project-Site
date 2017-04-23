@@ -89,7 +89,7 @@ void* delOptRun(void *arg) {
                 delOptTable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                assert(delOptTable->remove(instr.second.first)->get_data() == instr.second.second);
+                assert(delOptTable->remove(instr.second.first) == true);
                 break;
             case lookup:
                 assert(delOptTable->find(instr.second.first)->get_data() == instr.second.second);
