@@ -28,7 +28,6 @@ private:
         return (LLNode<K, V>*)((unsigned long)node | 0x1);
     }
 
-    /* returns the "prev" of the node that has the key match */
     std::pair<LLNode<K,V>*, LLNode<K,V>*> internal_find(LLNode<K,V>* head, K key) {
         LLNode<K,V>* prev = noMark(head);
         // printf("Check 1\n");
@@ -94,6 +93,18 @@ public:
         table_size = num_buckets;
         hash_fn = hash;
         table = std::vector< LLNode<K,V>* >(num_buckets, new LLNode<K, V>(0, 0, NULL)); // dummy values
+    }
+
+    ~DelOptHashTable() {
+        for (int i = 0; i < table.size(); i++) {
+            LLNode<K,V>* curr = table[i];
+            while(curr != NULL) {
+                LLNode<K,V>* del = curr;
+                curr = curr->get_next();
+                delete del;
+            }
+        }
+        table.clear();
     }
 
     bool insert(K key, V val) {
