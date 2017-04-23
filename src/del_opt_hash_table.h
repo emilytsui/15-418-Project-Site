@@ -57,8 +57,7 @@ private:
             }
             else
             {
-                if (__sync_bool_compare_and_swap(&(prev->next), curr, curr->next) || 
-                __sync_bool_compare_and_swap(&(prev->next), withMark(curr), curr->next)) { // Fix Me!
+                if (__sync_bool_compare_and_swap(&(prev->next), curr, curr->next)) { // Fix Me!
                     return curr;
                 }
                 else
@@ -87,41 +86,21 @@ public:
         printf("In Insert!\n");
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* head = noMark(table[hashIndex]);
-        LLNode<K,V>* prev = noMark(head);
+        LLNode<K,V>* curr = noMark(head->get_next());
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         while(true) {
             if (internal_find(head, key) != NULL) {
                 return false;
             }
             // printf("Finished internal find!\n");
-            LLNode<K,V>* curr = noMark(head->get_next());
-            while (curr != NULL)
-            {
-                if (is_marked(curr))
-                {
-                    // if (__sync_bool_compare_and_swap(&(prev->get_next()->get_key()), curr->get_key(), key) &&
-                    //     __sync_bool_compare_and_swap(&(prev->get_next()->get_data()), curr->get_data(), val))
-                    // {
-                    if (__sync_bool_compare_and_swap(&(prev->next), curr, curr->set_key(key)->set_data(val))) // Without mark
-                    {
-                        unmark(curr);
-                        return true;
-                    }
-                    else if (__sync_bool_compare_and_swap(&(prev->next), withMark(curr), withMark(curr->set_key(key)->set_data(val)))) // With mark
-                    {
-                        unmark(curr);
-                        return true;
-                    }
-                }
-                prev = curr;
-                curr = noMark(curr->get_next());
-            }
-            curr = noMark(head->get_next());
             node->set_next(curr);
-            if (__sync_bool_compare_and_swap(&(table[hashIndex]->next), curr, node))
+            node = unmark(node);
+            if (__sync_bool_compare_and_swap(&(table[hashIndex]->next), curr, node) ||
+                __sync_bool_compare_and_swap(&(table[hashIndex]->next), withMark(curr), node))
             {
                 return true;
             }
+            printf("End of loop curr is %p!\n", curr);
         }
     }
 
@@ -142,10 +121,18 @@ public:
                 prev = curr;
                 curr = noMark(curr->get_next());
             }
-            if (__sync_bool_compare_and_swap(&(prev->next), curr, curr->next) || 
-                __sync_bool_compare_and_swap(&(prev->next), withMark(curr), curr->next)) { // Fix Me!
-                return curr;
+            if (!__sync_bool_compare_and_swap(&(curr->next), noMark(curr->next), withMark(curr->next)))
+            {
+                continue;
             }
+            if (__sync_bool_compare_and_swap(&(prev->next), withMark(curr), curr->next)) {
+                // garbage collection
+            }
+            else
+            {
+                return internal_find(head, key);
+            }
+            return curr;
             printf("End of remove loop\n");
         }
     }
