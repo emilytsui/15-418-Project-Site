@@ -6,27 +6,27 @@ template <typename K, typename V>
 class DelOptHashTable {
 private:
 
-    LLNode<K,V>* mark(LLNode<K,V>* node) {
-        return node->set_next((LLNode<K,V>*)((unsigned long) node->get_next() | 0x1));
+    LLNode<K,V>* marked(LLNode<K,V>* node) {
+        return (LLNode<K,V>*)((unsigned long) node->get_next() | 0x1);
     }
 
-    LLNode<K,V>* unmark(LLNode<K,V>* node) {
-        return node->set_next((LLNode<K,V>*)((unsigned long) node->get_next() & (-1 << 1)));
+    LLNode<K,V>* unmarked(LLNode<K,V>* node) {
+        return (LLNode<K,V>*)((unsigned long) node->get_next() & (-1 << 1));
     }
 
     bool is_marked(LLNode<K,V>* node) {
         return (((unsigned long)node->get_next()) & 0x1);
     }
 
-    LLNode<K, V>* noMark(LLNode<K,V>* node)
-    {
-        return (LLNode<K, V>*)((unsigned long)node & (-1 << 1));
-    }
+    // LLNode<K, V>* noMark(LLNode<K,V>* node)
+    // {
+    //     return (LLNode<K, V>*)((unsigned long)node & (-1 << 1));
+    // }
 
-    LLNode<K, V>* withMark(LLNode<K,V>* node)
-    {
-        return (LLNode<K, V>*)((unsigned long)node | 0x1);
-    }
+    // LLNode<K, V>* withMark(LLNode<K,V>* node)
+    // {
+    //     return (LLNode<K, V>*)((unsigned long)node | 0x1);
+    // }
 
     std::pair<LLNode<K,V>*, LLNode<K,V>*> internal_find(LLNode<K,V>* head, const K key) {
         // printf("key: %d\n", key);
@@ -42,8 +42,8 @@ private:
                 res.second = curr;
                 return res;
             }
-            LLNode<K,V>* next = (noMark(curr))->get_next();
-            if ((noMark(prev))->get_next() != curr)
+            LLNode<K,V>* next = (unmarked(curr))->get_next();
+            if ((unmarked(prev))->get_next() != unmarked(curr))
             {
                 goto try_again;
             }
@@ -61,11 +61,8 @@ private:
             }
             else
             {
-                if (__sync_bool_compare_and_swap(&((noMark(prev))->next), noMark(curr), noMark(next))) {
+                if (__sync_bool_compare_and_swap(&(prev->next), unmarked(curr), unmarked(next))) {
                     // garbage collection - delete(curr)
-                    // res.first = prev;
-                    // res.second = curr->next;
-                    // return res;
                 }
                 else
                 {
@@ -95,8 +92,8 @@ public:
         while(true) {
             std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
             LLNode<K,V>* curr = res.second;
-            LLNode<K,V>* prev = noMark(res.first);
-            if (curr != NULL && (noMark(curr))->get_key() == key) {
+            LLNode<K,V>* prev = res.first;
+            if (curr != NULL && (curr->get_key() == key)) {
                 return false;
             }
             // printf("Finished internal find!\n");
@@ -104,7 +101,11 @@ public:
             // printf("Prev next: %p\n", prev->next);
             // printf("Curr: %p\n", curr);
             // printf("New node: %p\n", node);
-            if (__sync_bool_compare_and_swap(&(prev->next), noMark(curr), noMark(node)))
+            if (curr != NULL && __sync_bool_compare_and_swap(&(prev->next), unmarked(curr), unmarked(node)))
+            {
+                return true;
+            }
+            else if (curr == NULL && __sync_bool_compare_and_swap(&(prev->next), curr, unmarked(node)))
             {
                 return true;
             }
@@ -120,18 +121,18 @@ public:
         LLNode<K,V>* curr;
         while(true) {
             std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
-            prev = noMark(res.first);
-            curr = noMark(res.second);
-            if (curr == NULL || curr->get_key() != key)
+            prev = res.first;
+            curr = res.second;
+            if (curr == NULL)
             {
                 // printf("Didn't find to remove\n");
                 return false;
             }
-            if (!__sync_bool_compare_and_swap(&(curr->next), noMark(curr->next), withMark(curr->next)))
+            if (!__sync_bool_compare_and_swap(&(curr), unmarked(curr), marked(curr)))
             {
                 continue;
             }
-            if (__sync_bool_compare_and_swap(&(prev->next), noMark(curr), noMark(curr->next))) {
+            if (__sync_bool_compare_and_swap(&(prev->next), unmarked(curr), unmarked(curr->next))) {
                 // garbage collection - delete(curr)
             }
             else
