@@ -1,10 +1,12 @@
+### [Proposal](https://emilytsui.github.io/ParaHash) | [Checkpoint](https://emilytsui.github.io/ParaHash/checkpoint)
+
+---
+
 # Project Proposal: Lock-Free Hash Table Implementations
 ## Brenda Thayillam & Emily Tsui
----
-
-[Checkpoint](https://emilytsui.github.io/ParaHash/checkpoint)
 
 ---
+
 ### Summary
 We will be implementing one lock-free hash table optimized for inserts and one lock-free hash table optimized for deletes and potentially allow the ability for dynamic switching between the two implementations based on access patterns of the program the structures are being used in.
 
