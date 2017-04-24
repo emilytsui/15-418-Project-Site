@@ -38,9 +38,12 @@ It's hard to make a good performance lock-free hash table because of issues that
 ### Platform Choice
 The code will be written in C++, and we plan to use GCC's implementation of compare and swap. We will be developing on the GHC machines because our code should not be too compute intensive.
 
-### Schedule
+### Schedule (Updated 4/24/17)
 - April 10 – 16: Read up on and understand algorithms in research paper & create sequential test harness with different insertion and deletion patterns
-- April 17 – 23: Complete fine-grained lock-based hash table and delete-optimized lock-free hash table
-- April 24 – 30: Complete insert-optimized lock-free hash table
-- May 1 – 7: Run performance testing and if time, work on dynamic balancer between the two implementations
-- May 8 – 12: Finish up and finalize project
+- April 17 – 23: Complete fine-grained lock-based hash table and begin basic lock-free hash table with memory leaks
+- April 24 – 27: Complete basic lock-free hash table
+- April 28 - 30: Study for 15-418 exam
+- May 1 - 4: Implement double CAS lock-free implementation (Brenda) and the hazard-pointer lock-free implementation (Emily)
+- May 4 - 5: Read and understand [RMC](http://www.cs.cmu.edu/~crary/papers/2015/rmc.pdf)
+- May 6 - 10: Attempt to implement RMC into our lock-free implementations
+- May 11 - 12: Finalize project, create speedup plots, and finish write-up
