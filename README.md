@@ -23,17 +23,20 @@ It's hard to make a good performance lock-free hash table because of issues that
 #### Plan to achieve
 - Baseline sequential hash table testing harness
 - Implementation of fine-grained lock-based hash table
-- Implementation of insert-optimized lock-free hash table (based on research paper)
-- Implementation of delete-optimized lock-free hash table
+- Implementation of lock-free hash table that allows for memory leaks (based on research paper)
+- Implementation of lock-free hash table based on the concept of double CAS (based on research paper)
+- Implementation of hazard-pointer lock-free hash table (based on research paper using [this library](https://github.com/khizmax/libcds)
 
 #### Hope to achieve
-- Dynamic balancer that can determine when to switch between our two implemented lock-free hash tables based on access patterns
+- Implement RMC into our lock-free hash table
 
 #### Deliverables
-- An insert-optimized lock-free hash table
-- A delete-optimized lock-free hash table
+- A lock-free hash table with memory leaks
+- A lock-free hash table based on the concept of double CAS
+- A lock-free hash table using hazard pointers
 - Evaluation: Correctness based on sequential hash table testing harness
 - Evaluation: Performance compared to sequential and fine-grained hash table implementations
+- Evaluation and analysis: Performance between the different lock-free hash table implementations
 
 ### Platform Choice
 The code will be written in C++, and we plan to use GCC's implementation of compare and swap. We will be developing on the GHC machines because our code should not be too compute intensive.
