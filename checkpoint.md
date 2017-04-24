@@ -1,10 +1,12 @@
+### [Proposal](https://emilytsui.github.io/ParaHash)
+
+---
+
 # Project Checkpoint: Lock-Free Hash Table Implementations
 ## Brenda Thayillam & Emily Tsui
----
-
-[Proposal](https://emilytsui.github.io/ParaHash)
 
 ---
+
 ### Summary
 So far, we have created a testing harness for our hash table implementations. We have 2 testing files, both with tens of thousands of instructions, to test correctness of our implementations. We have 7 testing files, all with one million instructions, in order to test performance of our implementations. All the testing files have variable ratios of insert, delete, and lookup. We generated tests based on ratios of the instructions because different instruction patterns will show different speedups, as seen in the graphs in [this research paper](http://www.research.ibm.com/people/m/michael/spaa-2002.pdf) that we have been referencing.
 
