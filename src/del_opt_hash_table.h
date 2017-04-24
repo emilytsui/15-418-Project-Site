@@ -28,35 +28,29 @@ private:
         return (LLNode<K, V>*)((unsigned long)node | 0x1);
     }
 
-    std::pair<LLNode<K,V>*, LLNode<K,V>*> internal_find(LLNode<K,V>* head, K key) {
-        LLNode<K,V>* prev = noMark(head);
-        // printf("Check 1\n");
-        LLNode<K,V>* curr = noMark(prev->get_next());
+    std::pair<LLNode<K,V>*, LLNode<K,V>*> internal_find(LLNode<K,V>* head, const K key) {
+        // printf("key: %d\n", key);
+    try_again:
+        LLNode<K,V>* prev = head;
+        LLNode<K,V>* curr = prev->get_next();
         std::pair<LLNode<K,V>*, LLNode<K,V>*> res;
         while (true)
         {
-            // printf("Prev: %p\n", prev);
-            // printf("Curr: %p\n", curr);
             if (curr == NULL)
             {
                 res.first = prev;
                 res.second = curr;
                 return res;
             }
-            // printf("Check 2\n");
-            // printf("Curr: %p\n", curr);
-            LLNode<K,V>* next = noMark(curr->get_next());
-            // printf("Check 3\n");
-            // printf("Prev: %p\n", prev);
-            if (noMark(prev->get_next()) != noMark(curr))
+            LLNode<K,V>* next = (noMark(curr))->get_next();
+            if ((noMark(prev))->get_next() != curr)
             {
-                return internal_find(head, key);
+                goto try_again;
             }
-            // printf("Check change!\n");
             if (!is_marked(curr))
             {
-                // printf("Case 1\n");
                 K currKey = curr->get_key();
+                // printf("currKey: %d, key: %d, geq: %d\n", currKey, key, currKey >= key);
                 if (currKey >= key)
                 {
                     res.first = prev;
@@ -64,24 +58,21 @@ private:
                     return res;
                 }
                 prev = curr;
-                curr = next;
             }
             else
             {
-                // printf("Case 2\n");
-                if (__sync_bool_compare_and_swap(&(prev->next), noMark(curr), noMark(curr->next))) {
+                if (__sync_bool_compare_and_swap(&((noMark(prev))->next), noMark(curr), noMark(next))) {
                     // garbage collection - delete(curr)
-                    res.first = prev;
-                    res.second = curr->next;
-                    return res;
+                    // res.first = prev;
+                    // res.second = curr->next;
+                    // return res;
                 }
                 else
                 {
-                    // printf("Case 2.2\n");
-                    return internal_find(head, key);
+                    goto try_again;
                 }
             }
-            // printf("Check 4\n");
+            curr = next;
         }
     }
 
@@ -90,22 +81,22 @@ public:
     int (*hash_fn) (K);
     std::vector< LLNode<K,V>* > table;
 
-    DelOptHashTable(int num_buckets, int (*hash) (K)) {
+    DelOptHashTable(const int num_buckets, int (*hash) (K)) {
         table_size = num_buckets;
         hash_fn = hash;
         table = std::vector< LLNode<K,V>* >(num_buckets, new LLNode<K, V>(0, 0, NULL)); // dummy values
     }
 
-    bool insert(K key, V val) {
-        // printf("In Insert!\n");  
+    bool insert(const K key, const V val) {
+        // printf("In Insert!\n");
         int hashIndex = hash_fn(key) % table_size;
-        LLNode<K,V>* head = noMark(table[hashIndex]);
+        LLNode<K,V>* head = table[hashIndex];
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         while(true) {
             std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
-            LLNode<K,V>* curr = noMark(res.second);
+            LLNode<K,V>* curr = res.second;
             LLNode<K,V>* prev = noMark(res.first);
-            if (curr != NULL && curr->get_key() == key) {
+            if (curr != NULL && (noMark(curr))->get_key() == key) {
                 return false;
             }
             // printf("Finished internal find!\n");
@@ -121,17 +112,17 @@ public:
         }
     }
 
-    bool remove(K key) {
+    bool remove(const K key) {
         // printf("In remove!\n");
         int hashIndex = hash_fn(key) % table_size;
-        LLNode<K,V>* head = noMark(table[hashIndex]);
+        LLNode<K,V>* head = table[hashIndex];
         LLNode<K,V>* prev;
         LLNode<K,V>* curr;
         while(true) {
             std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
             prev = noMark(res.first);
             curr = noMark(res.second);
-            if (curr == NULL)
+            if (curr == NULL || curr->get_key() != key)
             {
                 // printf("Didn't find to remove\n");
                 return false;
@@ -152,10 +143,10 @@ public:
         }
     }
 
-    LLNode<K,V>* find(K key) {
+    LLNode<K,V>* find(const K key) {
         // printf("In lookup!\n");
         int hashIndex = hash_fn(key) % table_size;
-        LLNode<K,V>* curr = internal_find(noMark(table[hashIndex]), key).second;
+        LLNode<K,V>* curr = internal_find(table[hashIndex], key).second;
         if (curr != NULL && curr->get_key() != key)
         {
             curr = NULL;
