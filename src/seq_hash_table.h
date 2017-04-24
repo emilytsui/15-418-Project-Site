@@ -17,11 +17,30 @@ public:
         table = std::vector< LLNode<K,V>* >(num_buckets, NULL);
     }
 
-    void insert(K key, V val) {
+    bool insert(K key, V val) {
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         int hashIndex = hash_fn(key) % table_size;
-        node->set_next(table[hashIndex]);
-        table[hashIndex] = node;
+        LLNode<K,V>* prev = NULL;
+        LLNode<K,V>* curr = table[hashIndex];
+        while (curr != NULL && curr->get_key() <= key)
+        {
+            prev = curr;
+            curr = curr->get_next();
+        }
+        if (curr != NULL && curr->get_key() == key)
+        {
+            return false;
+        }
+        node->set_next(curr);
+        if (prev != NULL)
+        {
+            prev->set_next(node);
+        }
+        else
+        {
+            table[hashIndex] = node;
+        }
+        return true;
     }
 
     LLNode<K,V>* remove(K key) {
@@ -29,7 +48,7 @@ public:
         LLNode<K,V>* result = NULL;
         LLNode<K,V>* curr = table[hashIndex];
         LLNode<K,V>* prev = NULL;
-        while(curr != NULL)
+        while(curr != NULL && curr->get_key() <= key)
         {
             if (curr->get_key() == key) {
                 result = curr;
@@ -55,7 +74,7 @@ public:
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* curr = table[hashIndex];
         LLNode<K,V>* prev = NULL;
-        while(curr != NULL)
+        while(curr != NULL && curr->get_key() <= key)
         {
             if (curr->get_key() == key) {
                 return curr;

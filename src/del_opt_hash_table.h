@@ -31,7 +31,7 @@ private:
     std::pair<LLNode<K,V>*, LLNode<K,V>*> internal_find(LLNode<K,V>* head, K key) {
         LLNode<K,V>* prev = noMark(head);
         // printf("Check 1\n");
-        LLNode<K,V>* curr = noMark(head->get_next());
+        LLNode<K,V>* curr = noMark(prev->get_next());
         std::pair<LLNode<K,V>*, LLNode<K,V>*> res;
         while (true)
         {
@@ -57,7 +57,7 @@ private:
             {
                 // printf("Case 1\n");
                 K currKey = curr->get_key();
-                if (currKey == key)
+                if (currKey >= key)
                 {
                     res.first = prev;
                     res.second = curr;
@@ -97,7 +97,7 @@ public:
     }
 
     bool insert(K key, V val) {
-        // printf("In Insert!\n");
+        // printf("In Insert!\n");  
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* head = noMark(table[hashIndex]);
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
@@ -105,7 +105,7 @@ public:
             std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
             LLNode<K,V>* curr = noMark(res.second);
             LLNode<K,V>* prev = noMark(res.first);
-            if (curr != NULL && curr->get_key() != key) {
+            if (curr != NULL && curr->get_key() == key) {
                 return false;
             }
             // printf("Finished internal find!\n");
@@ -131,7 +131,7 @@ public:
             std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
             prev = noMark(res.first);
             curr = noMark(res.second);
-            if (curr == NULL || curr->get_key() != key)
+            if (curr == NULL)
             {
                 // printf("Didn't find to remove\n");
                 return false;
@@ -155,6 +155,11 @@ public:
     LLNode<K,V>* find(K key) {
         // printf("In lookup!\n");
         int hashIndex = hash_fn(key) % table_size;
-        return internal_find(noMark(table[hashIndex]), key).second;
+        LLNode<K,V>* curr = internal_find(noMark(table[hashIndex]), key).second;
+        if (curr != NULL && curr->get_key() != key)
+        {
+            curr = NULL;
+        }
+        return curr;
     }
 };

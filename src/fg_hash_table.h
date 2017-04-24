@@ -24,13 +24,33 @@ public:
         }
     }
 
-    void insert(K key, V val) {
+    bool insert(K key, V val) {
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         int hashIndex = hash_fn(key) % table_size;
         pthread_mutex_lock(&locks[hashIndex]);
-        node->set_next(table[hashIndex]);
-        table[hashIndex] = node;
+        LLNode<K, V>* prev = NULL;
+        LLNode<K, V>* curr = table[hashIndex];
+        while (curr != NULL && curr->get_key() <= key)
+        {
+            prev = curr;
+            curr = curr->get_next();
+        }
+        if (curr != NULL && curr->get_key() == key)
+        {
+            pthread_mutex_unlock(&locks[hashIndex]);
+            return false;
+        }
+        node->set_next(curr);
+        if (prev != NULL)
+        {
+            prev->set_next(node);
+        }
+        else
+        {
+            table[hashIndex] = node;
+        }
         pthread_mutex_unlock(&locks[hashIndex]);
+        return true;
     }
 
     LLNode<K,V>* remove(K key) {
@@ -39,7 +59,7 @@ public:
         LLNode<K,V>* prev = NULL;
         pthread_mutex_lock(&locks[hashIndex]);
         LLNode<K,V>* curr = table[hashIndex];
-        while(curr != NULL)
+        while(curr != NULL && curr->get_key() <= key)
         {
             if (curr->get_key() == key) {
                 result = curr;
@@ -68,7 +88,7 @@ public:
         pthread_mutex_lock(&locks[hashIndex]);
         LLNode<K,V>* curr = table[hashIndex];
         LLNode<K,V>* prev = NULL;
-        while(curr != NULL)
+        while(curr != NULL && curr->get_key() <= key)
         {
             if (curr->get_key() == key) {
                 pthread_mutex_unlock(&locks[hashIndex]);

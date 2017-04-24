@@ -87,13 +87,16 @@ void* delOptRun(void *arg) {
         switch(instr.first)
         {
             case insert:
-                delOptTable->insert(instr.second.first, instr.second.second);
+                // printf("Thread %d insert: %d\n", id, instr.second.first);
+                assert(delOptTable->insert(instr.second.first, instr.second.second) == true);
                 break;
             case del:
-                assert(delOptTable->remove(instr.second.first) == true);
+                // printf("Thread %d delete: %d\n", id, instr.second.first);
+                delOptTable->remove(instr.second.first);
                 break;
             case lookup:
-                assert(delOptTable->find(instr.second.first)->get_data() == instr.second.second);
+                // printf("Thread %d lookup: %d\n", id, instr.second.first);
+                delOptTable->find(instr.second.first);
                 break;
             default:
                 break;
@@ -114,13 +117,13 @@ void* fgRun(void *arg)
         switch(instr.first)
         {
             case insert:
-                htable->insert(instr.second.first, instr.second.second);
+                assert(htable->insert(instr.second.first, instr.second.second) == true);
                 break;
             case del:
-                assert(htable->remove(instr.second.first)->get_data() == instr.second.second);
+                htable->remove(instr.second.first); // Can Fail
                 break;
             case lookup:
-                assert(htable->find(instr.second.first)->get_data() == instr.second.second);
+                htable->find(instr.second.first); // Can Fail
                 break;
             default:
                 break;
@@ -137,13 +140,13 @@ void seqRun(SeqHashTable<int, int>* htable)
         switch(instr.first)
         {
             case insert:
-                htable->insert(instr.second.first, instr.second.second);
+                assert(htable->insert(instr.second.first, instr.second.second) == true);
                 break;
             case del:
-                assert(htable->remove(instr.second.first)->get_data() == instr.second.second);
+                htable->remove(instr.second.first); // Can Fail
                 break;
             case lookup:
-                assert(htable->find(instr.second.first)->get_data() == instr.second.second);
+                htable->find(instr.second.first); // Can Fail
                 break;
             default:
                 break;
