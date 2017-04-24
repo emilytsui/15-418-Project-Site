@@ -76,7 +76,7 @@ void parseText(const std::string &filename)
 }
 
 void* delOptRun(void *arg) {
-    printf("In delete Optimal\n");
+    // printf("In delete Optimal\n");
     int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
     int start = instrPerThread * id;
@@ -152,6 +152,7 @@ void seqRun(SeqHashTable<int, int>* htable)
 }
 
 void testDelOptCorrectness(SeqHashTable<int, int>* baseline, DelOptHashTable<int, int>* htable) {
+    printf("In del optimal correctness check\n");
     for (int i = 0; i < baseline->table_size; i++)
     {
         LLNode<int, int>* curr = baseline->table[i];
@@ -180,6 +181,7 @@ void testDelOptCorrectness(SeqHashTable<int, int>* baseline, DelOptHashTable<int
             curr = curr->get_next();
         }
     }
+    printf("Completed delete optimal correctness\n");
 }
 
 void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* htable)
