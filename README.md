@@ -1,9 +1,9 @@
-### [Proposal](https://emilytsui.github.io/ParaHash) | [Checkpoint](https://emilytsui.github.io/ParaHash/checkpoint)
+# Project Proposal: Lock-Free Hash Table Implementations
+## Brenda Thayillam & Emily Tsui
 
 ---
 
-# Project Proposal: Lock-Free Hash Table Implementations
-## Brenda Thayillam & Emily Tsui
+### [Proposal](https://emilytsui.github.io/ParaHash) | [Checkpoint](https://emilytsui.github.io/ParaHash/checkpoint)
 
 ---
 
