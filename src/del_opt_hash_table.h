@@ -15,7 +15,7 @@ private:
     }
 
     bool is_marked(LLNode<K,V>* node) {
-        return (((unsigned long)node) & 0x1);
+        return (((unsigned long) node) & 0x1);
     }
 
     // LLNode<K, V>* noMark(LLNode<K,V>* node)
@@ -32,18 +32,18 @@ private:
         // printf("key: %d\n", key);
     try_again:
         LLNode<K,V>* prev = head;
-        LLNode<K,V>* curr = unmarked(prev)->get_next();
+        LLNode<K,V>* curr = prev->get_next();
         std::pair<LLNode<K,V>*, LLNode<K,V>*> res;
         while (true)
         {
             if (unmarked(curr) == NULL)
             {
-                res.first = unmarked(prev);
+                res.first = prev;
                 res.second = unmarked(curr);
                 return res;
             }
             LLNode<K,V>* next = (unmarked(curr))->get_next();
-            if ((unmarked(prev))->get_next() != unmarked(curr))
+            if ((unmarked(prev))->get_next() != curr)
             {
                 goto try_again;
             }
@@ -53,15 +53,15 @@ private:
                 // printf("currKey: %d, key: %d, geq: %d\n", currKey, key, currKey >= key);
                 if (currKey >= key)
                 {
-                    res.first = unmarked(prev);
-                    res.second = unmarked(curr);
+                    res.first = prev;
+                    res.second = curr;
                     return res;
                 }
                 prev = curr;
             }
             else
             {
-                if (__sync_bool_compare_and_swap(&(prev->next), unmarked(curr), unmarked(next))) {
+                if (__sync_bool_compare_and_swap(&(prev->next), curr, unmarked(next))) {
                     // garbage collection - delete(curr)
                 }
                 else
@@ -91,8 +91,8 @@ public:
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         while(true) {
             std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
-            LLNode<K,V>* curr = unmarked(res.second);
-            LLNode<K,V>* prev = unmarked(res.first);
+            LLNode<K,V>* curr = res.second;
+            LLNode<K,V>* prev = res.first;
             if (curr != NULL && (curr->get_key() == key)) {
                 return false;
             }
@@ -101,7 +101,7 @@ public:
             // printf("Prev next: %p\n", prev->next);
             // printf("Curr: %p\n", curr);
             // printf("New node: %p\n", node);
-            if (__sync_bool_compare_and_swap(&(prev->next), unmarked(curr), unmarked(node)))
+            if (__sync_bool_compare_and_swap(&(prev->next), curr, node))
             {
                 return true;
             }
@@ -124,11 +124,13 @@ public:
                 // printf("Didn't find to remove\n");
                 return false;
             }
-            if (!__sync_bool_compare_and_swap(&(unmarked(curr)->next), unmarked(unmarked(curr)->next), marked(unmarked(curr)->next)))
+            LLNode<K,V>* next = unmarked(curr)->get_next();
+            if (!is_marked(next) &&
+                !__sync_bool_compare_and_swap(&(unmarked(curr)->next), next, marked(next)))
             {
                 continue;
             }
-            if (__sync_bool_compare_and_swap(&(unmarked(prev)->next), unmarked(curr), unmarked(unmarked(curr)->next))) {
+            if (__sync_bool_compare_and_swap(&(unmarked(prev)->next), curr, next)) {
                 // garbage collection - delete(curr)
             }
             else
