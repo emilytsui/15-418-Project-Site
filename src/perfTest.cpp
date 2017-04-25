@@ -178,11 +178,11 @@ int main() {
     for (uint i = 0; i < testfiles.size(); i++) {
         printf("\nPerformance Testing file: %s on fine-grained lock-based hash table\n", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
-        baseline = new SeqHashTable<int, int>(input.size() / 1000, &hash);
+        baseline = new SeqHashTable<int, int>(10000, &hash);
         baseTime = seqRun(baseline);
         for (uint j = 1; j <= 16; j *= 2)
         {
-            htable = new FgHashTable<int, int>(input.size() / 1000, &hash);
+            htable = new FgHashTable<int, int>(10000, &hash);
             numThreads = j;
             double startTime = CycleTimer::currentSeconds();
             for (uint id = 0; id < j; id++)
@@ -201,7 +201,7 @@ int main() {
         printf("\nPerformance Testing file: %s on delete-optimal lock-free hash table\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
-            delOptTable = new DelOptHashTable<int, int>(input.size() / 1000, &hash);
+            delOptTable = new DelOptHashTable<int, int>(10000, &hash);
             numThreads = j;
             double startTime = CycleTimer::currentSeconds();
             for (uint id = 0; id < j; id++)

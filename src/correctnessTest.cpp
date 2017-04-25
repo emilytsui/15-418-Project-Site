@@ -22,7 +22,8 @@ SeqHashTable<int, int>* baseline;
 FgHashTable<int, int>* htable;
 DelOptHashTable<int, int>* delOptTable;
 
-const char *args[] = {"tests/correctness1.txt",
+const char *args[] = {"tests/correctness-small.txt",
+                      "tests/correctness1.txt",
                       "tests/correctness2.txt"};
 std::vector<std::string> testfiles(args, args + sizeof(args)/sizeof(args[0]));
 
@@ -88,7 +89,7 @@ void* delOptRun(void *arg) {
         {
             case insert:
                 // printf("Thread %d insert: %d\n", id, instr.second.first);
-                assert(delOptTable->insert(instr.second.first, instr.second.second) == true);
+                delOptTable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
                 // printf("Thread %d delete: %d\n", id, instr.second.first);
@@ -117,7 +118,7 @@ void* fgRun(void *arg)
         switch(instr.first)
         {
             case insert:
-                assert(htable->insert(instr.second.first, instr.second.second) == true);
+                htable->insert(instr.second.first, instr.second.second); // Can Fail
                 break;
             case del:
                 htable->remove(instr.second.first); // Can Fail
@@ -140,7 +141,7 @@ void seqRun(SeqHashTable<int, int>* htable)
         switch(instr.first)
         {
             case insert:
-                assert(htable->insert(instr.second.first, instr.second.second) == true);
+                htable->insert(instr.second.first, instr.second.second); // Can Fail
                 break;
             case del:
                 htable->remove(instr.second.first); // Can Fail
@@ -228,11 +229,11 @@ int main() {
     for (uint i = 0; i < testfiles.size(); i++) {
         printf("Correctness Testing file: %s for fine-grained hash table\n", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
-        baseline = new SeqHashTable<int, int>(1000, &hash);
+        baseline = new SeqHashTable<int, int>(10000, &hash);
         seqRun(baseline);
         for (uint j = 1; j <= 16; j *= 2)
         {
-            htable = new FgHashTable<int, int>(1000, &hash);
+            htable = new FgHashTable<int, int>(10000, &hash);
             numThreads = j;
             for (uint id = 0; id < j; id++)
             {
@@ -248,7 +249,7 @@ int main() {
         printf("Correctness Testing file: %s for delete-optimal lock-free hash table\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
-            delOptTable = new DelOptHashTable<int, int>(1000, &hash);
+            delOptTable = new DelOptHashTable<int, int>(10000, &hash);
             numThreads = j;
             for (uint id = 0; id < j; id++)
             {
