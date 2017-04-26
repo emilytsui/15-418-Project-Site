@@ -28,48 +28,91 @@ private:
     //     return (LLNode<K, V>*)((unsigned long)node | 0x1);
     // }
 
-    std::pair<LLNode<K,V>*, LLNode<K,V>*> internal_find(LLNode<K,V>* head, const K key) {
+    LLNode<K,V>* internal_find(const K key, LLNode<K,V>** retPrev) {
         // printf("key: %d\n", key);
+    int hashIndex = hash_fn(key) % table_size;
+    LLNode<K,V>* retCurr;
+    LLNode<K,V>* retPrevNext;
     try_again:
-        LLNode<K,V>* prev = head;
-        LLNode<K,V>* curr = prev->get_next();
-        std::pair<LLNode<K,V>*, LLNode<K,V>*> res;
         while (true)
         {
-            if (unmarked(curr) == NULL)
-            {
-                res.first = prev;
-                res.second = unmarked(curr);
-                return res;
-            }
-            LLNode<K,V>* next = (unmarked(curr))->get_next();
-            if ((unmarked(prev))->get_next() != curr)
-            {
-                goto try_again;
-            }
-            if (!is_marked(curr->next))
-            {
-                K currKey = unmarked(curr)->get_key();
-                // printf("currKey: %d, key: %d, geq: %d\n", currKey, key, currKey >= key);
-                if (currKey >= key)
+            LLNode<K,V>* prev = table[hashIndex];
+            LLNode<K,V>* curr = prev->get_next();
+            do {
+                if (!is_marked(curr))
                 {
-                    res.first = prev;
-                    res.second = curr;
-                    return res;
+                    (*retPrev) = prev;
+                    retPrevNext = curr;
                 }
-                prev = curr;
-            }
-            else
+                prev = unmarked(curr);
+                if (prev == NULL)
+                {
+                    break;
+                }
+                curr = prev->get_next();
+            } while (is_marked(curr) || (unmarked(prev)->get_key() < key));
+            retCurr = prev;
+
+            // make sure retPrev and retCurr still adjacent
+            if (retPrevNext == retCurr)
             {
-                if (__sync_bool_compare_and_swap(&(prev->next), curr, unmarked(next))) {
-                    // garbage collection - delete(curr)
-                }
-                else
+                if (retCurr != NULL && is_marked(unmarked(retCurr)->get_next()))
                 {
                     goto try_again;
                 }
+                else
+                {
+                    return retCurr;
+                }
             }
-            curr = next;
+
+            // remove any marked nodes
+            if (__sync_bool_compare_and_swap(&(unmarked((*retPrev))->next), retPrevNext, retCurr))
+            {
+                if (retCurr != NULL && is_marked(unmarked(retCurr)->get_next()))
+                {
+                    goto try_again;
+                }
+                else
+                {
+                    return retCurr;
+                }
+            }
+
+            // if (unmarked(curr) == NULL)
+            // {
+            //     res->prev = prev;
+            //     res->curr = curr;
+            //     return res;
+            // }
+            // LLNode<K,V>* next = (unmarked(curr))->get_next();
+            // if ((unmarked(prev))->get_next() != unmarked(curr))
+            // {
+            //     goto try_again;
+            // }
+            // if (!is_marked(next))
+            // {
+            //     K currKey = unmarked(curr)->get_key();
+            //     // printf("currKey: %d, key: %d, geq: %d\n", currKey, key, currKey >= key);
+            //     if (currKey >= key)
+            //     {
+            //         res->prev = prev;
+            //         res->curr = curr;
+            //         return res;
+            //     }
+            //     prev = curr;
+            // }
+            // else
+            // {
+            //     if (__sync_bool_compare_and_swap(&(prev->next), unmarked(curr), unmarked(next))) {
+            //         // garbage collection - delete(curr)
+            //     }
+            //     else
+            //     {
+            //         goto try_again;
+            //     }
+            // }
+            // curr = next;
         }
     }
 
@@ -86,13 +129,14 @@ public:
 
     bool insert(const K key, const V val) {
         // printf("In Insert!\n");
-        int hashIndex = hash_fn(key) % table_size;
-        LLNode<K,V>* head = table[hashIndex];
+        // int hashIndex = hash_fn(key) % table_size;
+        // LLNode<K,V>* head = table[hashIndex];
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
+        LLNode<K, V>* curr;
+        LLNode<K, V>* prev;
         while(true) {
-            std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
-            LLNode<K,V>* curr = res.second;
-            LLNode<K,V>* prev = res.first;
+            curr = unmarked(internal_find(key, &prev));
+            prev = unmarked(prev);
             if (curr != NULL && (curr->get_key() == key)) {
                 return false;
             }
@@ -111,41 +155,48 @@ public:
 
     bool remove(const K key) {
         // printf("In remove!\n");
-        int hashIndex = hash_fn(key) % table_size;
-        LLNode<K,V>* head = table[hashIndex];
+        // int hashIndex = hash_fn(key) % table_size;
+        // LLNode<K,V>* head = table[hashIndex];
         LLNode<K,V>* prev;
         LLNode<K,V>* curr;
+        LLNode<K,V>* next;
+        LLNode<K,V>* noMarkCurr;
         while(true) {
-            std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
-            prev = res.first;
-            curr = res.second;
-            if (unmarked(curr) == NULL)
+            curr = internal_find(key, &prev);
+            noMarkCurr = unmarked(curr);
+            if (noMarkCurr == NULL || noMarkCurr->get_key() != key)
             {
                 // printf("Didn't find to remove\n");
                 return false;
             }
-            LLNode<K,V>* next = unmarked(curr)->get_next();
+            next = noMarkCurr->get_next();
             if (!is_marked(next) &&
-                !__sync_bool_compare_and_swap(&(unmarked(curr)->next), next, marked(next)))
+                !__sync_bool_compare_and_swap(&(noMarkCurr->next), next, marked(next)))
             {
-                continue;
+                break;
             }
-            if (__sync_bool_compare_and_swap(&(unmarked(prev)->next), curr, next)) {
-                // garbage collection - delete(curr)
-            }
-            else
-            {
-                internal_find(head, key);
-            }
-            return true;
+            // if (__sync_bool_compare_and_swap(&(unmarked(prev)->next), noMarkCurr, unmarked(next))) {
+            //     // garbage collection - delete(curr)
+            // }
+            // else
+            // {
+            //     internal_find(head, key);
+            // }
             // printf("End of remove loop\n");
         }
+        if (!__sync_bool_compare_and_swap(&(unmarked(prev)->next), noMarkCurr, unmarked(next)))
+        {
+            curr = internal_find(key, &prev);
+        }
+        return true;
     }
 
     LLNode<K,V>* find(const K key) {
         // printf("In lookup!\n");
-        int hashIndex = hash_fn(key) % table_size;
-        LLNode<K,V>* curr = unmarked(internal_find(table[hashIndex], key).second);
+        // int hashIndex = hash_fn(key) % table_size;
+        LLNode<K,V>* prev;
+        LLNode<K,V>* curr;
+        curr = unmarked(internal_find(key, &prev));
         if (curr != NULL && curr->get_key() != key)
         {
             curr = NULL;
