@@ -27,8 +27,9 @@ public:
             prev = curr;
             curr = curr->get_next();
         }
-        if (curr != NULL && curr->get_key() == key)
+        if (prev != NULL && prev->get_key() == key)
         {
+            // printf("sequential contained key: %d, inserting key: %d\n", prev->get_key(), key);
             return false;
         }
         node->set_next(curr);

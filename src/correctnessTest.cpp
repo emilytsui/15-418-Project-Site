@@ -16,6 +16,8 @@ enum Instr {
     lookup
 };
 
+#define TABLESIZE 10000
+
 static int numThreads;
 static std::vector<std::pair<Instr, std::pair<int, int> > > input;
 SeqHashTable<int, int>* baseline;
@@ -180,12 +182,11 @@ void testDelOptCorrectness(SeqHashTable<int, int>* baseline, DelOptHashTable<int
             // printf("%p\n", curr);
             if(res == NULL || res->get_data() != curr->get_data())
             {
-                printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
+                printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", curr->get_key(), curr->get_data());
             }
             curr = curr->get_next();
         }
     }
-    printf("Completed delete optimal correctness\n");
 }
 
 void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* htable)
@@ -196,9 +197,13 @@ void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* 
         while(curr != NULL)
         {
             LLNode<int, int>* res = htable->find(curr->get_key());
-            if(res == NULL || res->get_data() != curr->get_data())
+            if (res == NULL)
             {
                 printf("Incorrect: Lock-based Hash Table doesn't contain (%d, %d)\n", curr->get_key(), curr->get_data());
+            }
+            else if (res->get_data() != curr->get_data())
+            {
+                printf("Incorrect: Lock-based Hash Table doesn't contain the key with this value (%d, %d)\n", curr->get_key(), curr->get_data());
             }
             curr = curr->get_next();
         }
@@ -209,9 +214,13 @@ void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* 
         while(curr != NULL)
         {
             LLNode<int, int>* res = baseline->find(curr->get_key());
-            if(res == NULL || res->get_data() != curr->get_data())
+            if (res == NULL)
             {
-                printf("Incorrect: Lock-based Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
+                printf("Incorrect: Lock-based Hash Table contains additional elem (%d, %d)\n", curr->get_key(), curr->get_data());
+            }
+            else if (res->get_data() != curr->get_data())
+            {
+                printf("Incorrect: Lock-based Hash Table contains the key with a different value (%d, %d)\n", curr->get_key(), curr->get_data());
             }
             curr = curr->get_next();
         }
@@ -229,11 +238,11 @@ int main() {
     for (uint i = 0; i < testfiles.size(); i++) {
         printf("Correctness Testing file: %s for fine-grained hash table\n", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
-        baseline = new SeqHashTable<int, int>(10000, &hash);
+        baseline = new SeqHashTable<int, int>(TABLESIZE, &hash);
         seqRun(baseline);
         for (uint j = 1; j <= 16; j *= 2)
         {
-            htable = new FgHashTable<int, int>(10000, &hash);
+            htable = new FgHashTable<int, int>(TABLESIZE, &hash);
             numThreads = j;
             for (uint id = 0; id < j; id++)
             {
@@ -249,7 +258,7 @@ int main() {
         printf("Correctness Testing file: %s for delete-optimal lock-free hash table\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
-            delOptTable = new DelOptHashTable<int, int>(10000, &hash);
+            delOptTable = new DelOptHashTable<int, int>(TABLESIZE, &hash);
             numThreads = j;
             for (uint id = 0; id < j; id++)
             {
@@ -260,6 +269,7 @@ int main() {
                 pthread_join(threads[id], NULL);
             }
             testDelOptCorrectness(baseline, delOptTable);
+            printf("Completed delete optimal correctness with %d threads\n", j);
             delete(delOptTable);
         }
         delete(baseline);
