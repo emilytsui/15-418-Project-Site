@@ -14,21 +14,11 @@ private:
         return (LLNode<K,V>*)((unsigned long) node & (-1 << 1));
     }
 
-    bool is_marked(LLNode<K,V>* node) {
+    bool is_marked(LLNode<K,V>*& node) {
         return (((unsigned long) node) & 0x1);
     }
 
-    // LLNode<K, V>* noMark(LLNode<K,V>* node)
-    // {
-    //     return (LLNode<K, V>*)((unsigned long)node & (-1 << 1));
-    // }
-
-    // LLNode<K, V>* withMark(LLNode<K,V>* node)
-    // {
-    //     return (LLNode<K, V>*)((unsigned long)node | 0x1);
-    // }
-
-    std::pair<LLNode<K,V>*, LLNode<K,V>*> internal_find(LLNode<K,V>* head, const K key) {
+    std::pair<LLNode<K,V>*, LLNode<K,V>*> internal_find(LLNode<K,V>*& head, const K& key) {
         // printf("key: %d\n", key);
     try_again:
         LLNode<K,V>* prev = head;
@@ -89,7 +79,7 @@ public:
         }
     }
 
-    bool insert(const K key, const V val) {
+    bool insert(const K& key, const V& val) {
         // printf("In Insert!\n");
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* head = table[hashIndex];
@@ -114,7 +104,7 @@ public:
         }
     }
 
-    bool remove(const K key) {
+    bool remove(const K& key) {
         // printf("In remove!\n");
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* head = table[hashIndex];
@@ -147,7 +137,7 @@ public:
         }
     }
 
-    LLNode<K,V>* find(const K key) {
+    LLNode<K,V>* find(const K& key) {
         // printf("In lookup!\n");
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* curr = unmarked(internal_find(table[hashIndex], key).second);

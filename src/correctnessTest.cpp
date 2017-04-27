@@ -180,7 +180,7 @@ void testDelOptCorrectness(SeqHashTable<int, int>* baseline, DelOptHashTable<int
             // printf("%p\n", curr);
             if(res == NULL || res->get_data() != curr->get_data())
             {
-                printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
+                printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", curr->get_key(), curr->get_data());
             }
             curr = curr->get_next();
         }
@@ -211,7 +211,7 @@ void testFgCorrectness(SeqHashTable<int, int>* baseline, FgHashTable<int, int>* 
             LLNode<int, int>* res = baseline->find(curr->get_key());
             if(res == NULL || res->get_data() != curr->get_data())
             {
-                printf("Incorrect: Lock-based Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
+                printf("Incorrect: Lock-based Hash Table contains additional elem (%d, %d)\n", curr->get_key(), curr->get_data());
             }
             curr = curr->get_next();
         }
