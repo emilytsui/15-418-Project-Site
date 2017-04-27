@@ -81,7 +81,12 @@ public:
     DelOptHashTable(const int num_buckets, int (*hash) (K)) {
         table_size = num_buckets;
         hash_fn = hash;
-        table = std::vector< LLNode<K,V>* >(num_buckets, new LLNode<K, V>(0, 0, NULL)); // dummy values
+        table = std::vector< LLNode<K,V>* >(num_buckets, NULL);
+        // table.resize(num_buckets); // dummy values
+        for (int i = 0; i < num_buckets; i++)
+        {
+            table[i] = new LLNode<K, V>(0, 0);
+        }
     }
 
     bool insert(const K key, const V val) {
