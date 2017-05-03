@@ -9,6 +9,7 @@
 #include "seq_hash_table.h"
 #include "fg_hash_table.h"
 #include "del_opt_hash_table.h"
+#include "haz_ptr_hash_table.h"
 
 enum Instr {
     insert,
