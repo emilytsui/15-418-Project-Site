@@ -3,7 +3,7 @@
 #include "tools/linked_list_node.h"
 
 template <typename K, typename V>
-class DelOptHashTable {
+class MemLeakHashTable {
 private:
 
     LLNode<K,V>* marked(LLNode<K,V>* node) {
@@ -68,7 +68,7 @@ public:
     int (*hash_fn) (K);
     std::vector< LLNode<K,V>* > table;
 
-    DelOptHashTable(const int num_buckets, int (*hash) (K)) {
+    MemLeakHashTable(const int num_buckets, int (*hash) (K)) {
         table_size = num_buckets;
         hash_fn = hash;
         table = std::vector< LLNode<K,V>* >(num_buckets, NULL);

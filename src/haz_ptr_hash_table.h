@@ -28,7 +28,7 @@ private:
         LLNode<K,V>* prev = head;
         LLNode<K,V>* curr = prev->get_next();
         std::pair<LLNode<K,V>*, LLNode<K,V>*> res;
-        &hazardPtrs[3*id+1] = curr;
+        // &hazardPtrs[3*id+1] = curr;
         if ((unmarked(prev))->get_next() != curr)
         {
             goto try_again;
@@ -42,7 +42,7 @@ private:
                 return res;
             }
             LLNode<K,V>* next = (unmarked(curr))->get_next();
-            *&hazardPtrs[3*id] = next;
+            // *&hazardPtrs[3*id] = next;
             if ((unmarked(curr))->get_next() != next) {
                 goto try_again;
             }
@@ -61,7 +61,7 @@ private:
                     return res;
                 }
                 prev = curr;
-                *&hazardPtrs[3*id+2] = curr;
+                // *&hazardPtrs[3*id+2] = curr;
             }
             else
             {
@@ -74,7 +74,7 @@ private:
                 }
             }
             curr = next;
-            *&hazardPtrs[3*id+1] = next;
+            // *&hazardPtrs[3*id+1] = next;
         }
     }
 
@@ -101,7 +101,7 @@ public:
         LLNode<K,V>* node = new LLNode<K,V>(key, val);
         bool result;
         while(true) {
-            std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
+            std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key, id);
             LLNode<K,V>* curr = res.second;
             LLNode<K,V>* prev = res.first;
             if (curr != NULL && (curr->get_key() == key)) {
@@ -133,7 +133,7 @@ public:
         LLNode<K,V>* curr;
         bool result;
         while(true) {
-            std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key);
+            std::pair<LLNode<K,V>*, LLNode<K,V>*> res = internal_find(head, key, id);
             prev = res.first;
             curr = res.second;
             if (unmarked(curr) == NULL)
@@ -152,7 +152,7 @@ public:
             }
             else
             {
-                internal_find(head, key);
+                internal_find(head, key, id);
             }
             result = true;
             break;
@@ -167,7 +167,7 @@ public:
     LLNode<K,V>* find(const K& key, const int& id) {
         // printf("In lookup!\n");
         int hashIndex = hash_fn(key) % table_size;
-        LLNode<K,V>* curr = unmarked(internal_find(table[hashIndex], key).second);
+        LLNode<K,V>* curr = unmarked(internal_find(table[hashIndex], key, id).second);
         if (curr != NULL && curr->get_key() != key)
         {
             curr = NULL;
