@@ -1,5 +1,3 @@
-#pragma once
-
 template <typename K, typename V>
 class DNode {
 private:
@@ -8,20 +6,28 @@ private:
     V data;
 
 public:
-    std::pair<DNode*, uint> nextTag;
+
+    struct pair {
+        DNode* next;
+        uint tag;
+    };
+
+    pair* nextTag;
 
     DNode(K ke, V val, DNode* n = NULL, uint t = 0) {
         key = ke;
         data = val;
-        nextTag.first = n;
-        nextTag.second = t;
+        nextTag = new pair();
+        nextTag->next = n;
+        nextTag->tag = t;
     }
 
     DNode(DNode* n = NULL) {
         key = 0;
         data = 0;
-        nextTag.first = NULL;
-        nextTag.second = 0;
+        nextTag = new pair();
+        nextTag->next = NULL;
+        nextTag->tag = 0;
     }
 
     K get_key() {
@@ -43,25 +49,21 @@ public:
     }
 
     DNode* get_next() {
-        return nextTag.first;
+        return nextTag->next;
     }
 
     DNode* set_next(DNode* n) {
-        nextTag.first = n;
+        nextTag->next = n;
         return this;
     }
 
     uint get_tag() {
-        return nextTag.second;
+        return nextTag->tag;
     }
 
     DNode* set_tag(uint t) {
-        nextTag.second = t;
+        nextTag->tag = t;
         return this;
-    }
-
-    std::pair<DNode*, uint> get_nextTag() {
-        return nextTag;
     }
 
 };

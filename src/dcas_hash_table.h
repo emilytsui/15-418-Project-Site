@@ -24,44 +24,44 @@ private:
     try_again:
         DNode<K,V>* prev = head;
         uint ptag = prev->get_tag();
-        std::pair<DNode<K,V>*, uint> curr = prev->get_nextTag();
-        uint ctag = curr.second;
+        DNode<K, V>* curr = prev->get_next();
+        uint ctag = unmarked(curr)->get_tag();
         std::pair<DNode<K,V>*, DNode<K,V>*> res;
         while (true)
         {
-            if (unmarked(curr.first) == NULL)
+            if (unmarked(curr) == NULL)
             {
                 res.first = prev;
-                res.second = unmarked(curr.first);
+                res.second = unmarked(curr);
                 return res;
             }
-            std::pair<DNode<K,V>*, uint> next = (unmarked(curr.first))->get_nextTag();
-            if ((unmarked(prev))->get_nextTag() != curr)
+            DNode<K, V>* next = (unmarked(curr))->get_next();
+            if ((unmarked(prev))->get_next() != curr || unmarked(prev)->get_tag() != ptag)
             {
                 goto try_again;
             }
-            if (!is_marked(curr.first->get_next()))
+            if (!is_marked(curr->get_next()))
             {
                 K currKey = unmarked(curr)->get_key();
                 // printf("currKey: %d, key: %d, geq: %d\n", currKey, key, currKey >= key);
                 if (currKey >= key)
                 {
                     res.first = prev;
-                    res.second = curr.first;
+                    res.second = curr;
                     return res;
                 }
-                prev = curr.first;
-                ptag = curr.second;
+                prev = curr;
+                ptag = curr->get_tag();
             }
             else
             {
-                std::pair<DNode<K,V>*, uint> old;
-                old.first = curr.first;
-                old.second = ptag;
-                std::pair<DNode<K,V>*, uint> newVal;
-                newVal.first = unmarked(next.first);
-                newVal.second = ptag + 1;
-                if (__sync_bool_compare_and_swap(&(prev->get_nextTag()), old, newVal)) {
+                typename DNode<K, V>::pair* old;
+                old->next = unmarked(curr);
+                old->tag = ptag;
+                typename DNode<K, V>::pair* newVal;
+                newVal->next = unmarked(next);
+                newVal->tag = ptag + 1;
+                if (__sync_bool_compare_and_swap(&(prev->nextTag), old, newVal)) {
                     ctag = ptag + 1;
                 }
                 else
@@ -69,7 +69,6 @@ private:
                     goto try_again;
                 }
             }
-            next.second = ctag;
             curr = next;
         }
     }
@@ -110,12 +109,12 @@ public:
             // printf("Prev next: %p\n", prev->next);
             // printf("Curr: %p\n", curr);
             // printf("New node: %p\n", node);
-            std::pair<DNode<K,V>*, uint> old;
-            old.first = curr;
-            old.second = ptag;
-            std::pair<DNode<K,V>*, uint> newVal;
-            newVal.first = node;
-            newVal.second = ptag + 1;
+            typename DNode<K, V>::pair* old;
+            old->next = curr;
+            old->tag = ptag;
+            typename DNode<K, V>::pair* newVal;
+            newVal->next = node;
+            newVal->tag = ptag + 1;
             if (__sync_bool_compare_and_swap(&(prev->nextTag), old, newVal))
             {
                 return true;
@@ -142,24 +141,24 @@ public:
             uint ctag = curr->get_tag();
             uint ptag = prev->get_tag();
             DNode<K,V>* next = unmarked(curr)->get_next();
-            std::pair<DNode<K,V>*, uint> old1;
-            old1.first = next;
-            old1.second = ctag;
-            std::pair<DNode<K,V>*, uint> newVal1;
-            newVal1.first = marked(next);
-            newVal1.second = ctag + 1;
+            typename DNode<K, V>::pair* old1;
+            old1->next = next;
+            old1->tag = ctag;
+            typename DNode<K, V>::pair* newVal1;
+            newVal1->next = marked(next);
+            newVal1->tag = ctag + 1;
             if (!is_marked(next) &&
                 !__sync_bool_compare_and_swap(&(unmarked(curr)->nextTag), old1, newVal1))
             {
                 continue;
             }
 
-            std::pair<DNode<K,V>*, uint> old2;
-            old2.first = curr;
-            old2.second = ptag;
-            std::pair<DNode<K,V>*, uint> newVal2;
-            newVal2.first = next;
-            newVal2.second = ptag + 1;
+            typename DNode<K, V>::pair* old2;
+            old2->next = curr;
+            old2->tag = ptag;
+            typename DNode<K, V>::pair* newVal2;
+            newVal2->next = next;
+            newVal2->tag = ptag + 1;
             if (__sync_bool_compare_and_swap(&(unmarked(prev)->nextTag), old2, newVal2)) {
                 delete(curr);
             }
