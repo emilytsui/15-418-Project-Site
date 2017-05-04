@@ -8,7 +8,7 @@
 #include "tools/cycle_timer.h"
 #include "seq_hash_table.h"
 #include "fg_hash_table.h"
-#include "del_opt_hash_table.h"
+#include "mem_leak_hash_table.h"
 
 #define ALL_TESTS
 
@@ -22,7 +22,7 @@ static int numThreads;
 static std::vector<std::pair<Instr, std::pair<int, int> > > input;
 SeqHashTable<int, int>* baseline;
 FgHashTable<int, int>* htable;
-DelOptHashTable<int, int>* delOptTable;
+MemLeakHashTable<int, int>* lockFreeTable;
 
 const char *args[] = {"tests/uniform_all_test.txt",
                       "tests/chunked_all.txt",
@@ -82,7 +82,7 @@ void parseText(const std::string &filename)
     }
 }
 
-void* delOptRun(void* arg) {
+void* lockFreeRun(void* arg) {
     int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
     int start = instrPerThread * id;
@@ -94,14 +94,14 @@ void* delOptRun(void* arg) {
         switch(instr.first)
         {
             case insert:
-                delOptTable->insert(instr.second.first, instr.second.second);
+                lockFreeTable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                delOptTable->remove(instr.second.first); // Can fail
+                lockFreeTable->remove(instr.second.first); // Can fail
                 // printf("Deleted node: %p\n", res);
                 break;
             case lookup:
-                res = delOptTable->find(instr.second.first); // Can fail
+                res = lockFreeTable->find(instr.second.first); // Can fail
                 // printf("Lookup returned: %p\n", res);
                 break;
             default:
@@ -198,24 +198,24 @@ int main() {
             printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
             delete(htable);
         }
-        printf("\nPerformance Testing file: %s on delete-optimal lock-free hash table\n", testfiles[i].c_str());
+        printf("\nPerformance Testing file: %s on lock-free hash table with memory leaks\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
-            delOptTable = new DelOptHashTable<int, int>(10000, &hash);
+            lockFreeTable = new MemLeakHashTable<int, int>(10000, &hash);
             numThreads = j;
             double startTime = CycleTimer::currentSeconds();
             for (uint id = 0; id < j; id++)
             {
-                pthread_create(&threads[id], NULL, delOptRun, &ids[id]);
+                pthread_create(&threads[id], NULL, lockFreeRun, &ids[id]);
             }
             for (uint id = 0; id < j; id++)
             {
                 pthread_join(threads[id], NULL);
             }
             double dt = CycleTimer::currentSeconds() - startTime;
-            printf("%d Thread Delete-Optimal Lock-Free Test completed in %f ms!\n", numThreads, (1000.f * dt));
+            printf("%d Thread Lock-Free with Memory Leaks Test completed in %f ms!\n", numThreads, (1000.f * dt));
             printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
-            delete(delOptTable);
+            delete(lockFreeTable);
         }
         delete(baseline);
     }

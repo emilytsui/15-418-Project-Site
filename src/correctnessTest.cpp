@@ -8,7 +8,7 @@
 #include "tools/cycle_timer.h"
 #include "seq_hash_table.h"
 #include "fg_hash_table.h"
-#include "del_opt_hash_table.h"
+#include "mem_leak_hash_table.h"
 
 enum Instr {
     insert,
@@ -20,7 +20,7 @@ static int numThreads;
 static std::vector<std::pair<Instr, std::pair<int, int> > > input;
 SeqHashTable<int, int>* baseline;
 FgHashTable<int, int>* htable;
-DelOptHashTable<int, int>* delOptTable;
+MemLeakHashTable<int, int>* lockFreeTable;
 
 const char *args[] = {"tests/correctness-small.txt",
                       "tests/correctness1.txt",
@@ -76,7 +76,7 @@ void parseText(const std::string &filename)
     }
 }
 
-void* delOptRun(void *arg) {
+void* lockFreeRun(void *arg) {
     // printf("In delete Optimal\n");
     int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
@@ -89,15 +89,15 @@ void* delOptRun(void *arg) {
         {
             case insert:
                 // printf("Thread %d insert: %d\n", id, instr.second.first);
-                delOptTable->insert(instr.second.first, instr.second.second);
+                lockFreeTable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
                 // printf("Thread %d delete: %d\n", id, instr.second.first);
-                delOptTable->remove(instr.second.first);
+                lockFreeTable->remove(instr.second.first);
                 break;
             case lookup:
                 // printf("Thread %d lookup: %d\n", id, instr.second.first);
-                delOptTable->find(instr.second.first);
+                lockFreeTable->find(instr.second.first);
                 break;
             default:
                 break;
@@ -155,8 +155,7 @@ void seqRun(SeqHashTable<int, int>* htable)
     }
 }
 
-void testDelOptCorrectness(SeqHashTable<int, int>* baseline, DelOptHashTable<int, int>* htable) {
-    // printf("In del optimal correctness check\n");
+void testLockFreeCorrectness(SeqHashTable<int, int>* baseline, MemLeakHashTable<int, int>* htable) {
     for (int i = 0; i < baseline->table_size; i++)
     {
         LLNode<int, int>* curr = baseline->table[i];
@@ -227,10 +226,10 @@ int main() {
         ids[z] = z;
     }
     for (uint i = 0; i < testfiles.size(); i++) {
-        printf("Correctness Testing file: %s for fine-grained hash table\n", testfiles[i].c_str());
         parseText(testfiles[i].c_str());
         baseline = new SeqHashTable<int, int>(10000, &hash);
         seqRun(baseline);
+        printf("Correctness Testing file: %s for fine-grained hash table\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
             htable = new FgHashTable<int, int>(10000, &hash);
@@ -246,21 +245,21 @@ int main() {
             testFgCorrectness(baseline, htable);
             delete(htable);
         }
-        printf("Correctness Testing file: %s for delete-optimal lock-free hash table\n", testfiles[i].c_str());
+        printf("Correctness Testing file: %s for lock-free hash table with memory leaks\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
-            delOptTable = new DelOptHashTable<int, int>(10000, &hash);
+            lockFreeTable = new MemLeakHashTable<int, int>(10000, &hash);
             numThreads = j;
             for (uint id = 0; id < j; id++)
             {
-                pthread_create(&threads[id], NULL, delOptRun, &ids[id]);
+                pthread_create(&threads[id], NULL, lockFreeRun, &ids[id]);
             }
             for (uint id = 0; id < j; id++)
             {
                 pthread_join(threads[id], NULL);
             }
-            testDelOptCorrectness(baseline, delOptTable);
-            delete(delOptTable);
+            testLockFreeCorrectness(baseline, lockFreeTable);
+            delete(lockFreeTable);
         }
         delete(baseline);
     }
