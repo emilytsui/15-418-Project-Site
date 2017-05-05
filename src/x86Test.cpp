@@ -85,6 +85,7 @@ void parseText(const std::string &filename)
 
 void* dcasRun(void *arg) {
     // printf("In delete Optimal\n");
+    double startTime = CycleTimer::currentSeconds();
     int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
     int start = instrPerThread * id;
@@ -110,7 +111,9 @@ void* dcasRun(void *arg) {
                 break;
         }
     }
-    pthread_exit(NULL);
+    double dt = CycleTimer::currentSeconds() - startTime;
+    // pthread_exit(NULL);
+    // printf("Before thread return %f\n", dt * 1000.f);
 }
 
 double seqRun(SeqHashTable<int, int>* htable)
@@ -158,14 +161,17 @@ void testDCASCorrectness(SeqHashTable<int, int>* baseline, DCASHashTable<int, in
     for (int j = 0; j < htable->table_size; j++)
     {
         DNode<int, int>* curr = htable->table[j]->get_next();
+        int count = 0;
         while(curr != NULL)
         {
             LLNode<int, int>* res = baseline->find(curr->get_key());
             if(res == NULL || res->get_data() != curr->get_data())
             {
                 printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", curr->get_key(), curr->get_data());
+                printf("Element: %d\n", count);
             }
             curr = curr->get_next();
+            count++;
         }
     }
     // printf("Completed delete optimal correctness\n");
@@ -214,6 +220,7 @@ int main() {
             dcasTable = new DCASHashTable<int, int>(10000, &hash);
             numThreads = j;
             double startTime = CycleTimer::currentSeconds();
+            // printf("Start time: %f\n", startTime);
             for (uint id = 0; id < j; id++)
             {
                 pthread_create(&threads[id], NULL, dcasRun, &ids[id]);
@@ -223,6 +230,7 @@ int main() {
                 pthread_join(threads[id], NULL);
             }
             double dt = CycleTimer::currentSeconds() - startTime;
+            // printf("End time: %f\n", CycleTimer::currentSeconds());
             printf("%d Thread DCAS lock-free Test completed in %f ms!\n", numThreads, (1000.f * dt));
             printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
             delete(dcasTable);

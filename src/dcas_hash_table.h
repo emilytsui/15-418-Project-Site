@@ -59,13 +59,13 @@ private:
             else
             {
                 typename DNode<K, V>::pair old;
-                old.next = unmarked(curr);
+                old.next = curr;
                 old.tag = ptag;
                 typename DNode<K, V>::pair newVal;
                 newVal.next = unmarked(next);
                 newVal.tag = ptag + 1;
                 if ((prev->nextTag).compare_exchange_weak(old, newVal, std::memory_order_release, std::memory_order_relaxed)) {
-                    ctag = ptag + 1;
+                    unmarked(curr)->set_tag(ptag + 1);
                 }
                 else
                 {
