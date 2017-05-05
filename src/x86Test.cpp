@@ -158,14 +158,12 @@ void testDCASCorrectness(SeqHashTable<int, int>* baseline, DCASHashTable<int, in
     for (int j = 0; j < htable->table_size; j++)
     {
         DNode<int, int>* curr = htable->table[j]->get_next();
-        // printf("Next pointer: %p\n", curr);
         while(curr != NULL)
         {
             LLNode<int, int>* res = baseline->find(curr->get_key());
-            // printf("%p\n", curr);
             if(res == NULL || res->get_data() != curr->get_data())
             {
-                printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", res->get_key(), res->get_data());
+                printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", curr->get_key(), curr->get_data());
             }
             curr = curr->get_next();
         }
@@ -225,7 +223,7 @@ int main() {
                 pthread_join(threads[id], NULL);
             }
             double dt = CycleTimer::currentSeconds() - startTime;
-            printf("%d Thread Delete-Optimal Lock-Free Test completed in %f ms!\n", numThreads, (1000.f * dt));
+            printf("%d Thread DCAS lock-free Test completed in %f ms!\n", numThreads, (1000.f * dt));
             printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
             delete(dcasTable);
         }

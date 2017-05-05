@@ -2,30 +2,32 @@
 
 #include <vector>
 #include "tools/dcas_node.h"
+#include <stdint.h>
+#include <atomic>
 
 template <typename K, typename V>
 class DCASHashTable {
 private:
 
     DNode<K,V>* marked(DNode<K,V>* node) {
-        return (DNode<K,V>*)((uint) node | 0x1);
+        return (DNode<K,V>*)((uintptr_t) node | 0x1);
     }
 
     DNode<K,V>* unmarked(DNode<K,V>* node) {
-        return (DNode<K,V>*)((uint) node & (-1 << 1));
+        return (DNode<K,V>*)((uintptr_t) node & (-1 << 1));
     }
 
     bool is_marked(DNode<K,V>* node) {
-        return (((uint) node) & 0x1);
+        return (((uintptr_t) node) & 0x1);
     }
 
     std::pair<DNode<K,V>*, DNode<K,V>*> internal_find(DNode<K,V>* head, const K key) {
+        // printf("In internal find!\n");
         // printf("key: %d\n", key);
     try_again:
         DNode<K,V>* prev = head;
         uint ptag = prev->get_tag();
         DNode<K, V>* curr = prev->get_next();
-        uint ctag = unmarked(curr)->get_tag();
         std::pair<DNode<K,V>*, DNode<K,V>*> res;
         while (true)
         {
@@ -35,6 +37,7 @@ private:
                 res.second = unmarked(curr);
                 return res;
             }
+            uint ctag = unmarked(curr)->get_tag();
             DNode<K, V>* next = (unmarked(curr))->get_next();
             if ((unmarked(prev))->get_next() != curr || unmarked(prev)->get_tag() != ptag)
             {
@@ -55,13 +58,13 @@ private:
             }
             else
             {
-                typename DNode<K, V>::pair* old;
-                old->next = unmarked(curr);
-                old->tag = ptag;
-                typename DNode<K, V>::pair* newVal;
-                newVal->next = unmarked(next);
-                newVal->tag = ptag + 1;
-                if (__sync_bool_compare_and_swap(&(prev->nextTag), old, newVal)) {
+                typename DNode<K, V>::pair old;
+                old.next = unmarked(curr);
+                old.tag = ptag;
+                typename DNode<K, V>::pair newVal;
+                newVal.next = unmarked(next);
+                newVal.tag = ptag + 1;
+                if ((prev->nextTag).compare_exchange_weak(old, newVal, std::memory_order_release, std::memory_order_relaxed)) {
                     ctag = ptag + 1;
                 }
                 else
@@ -98,24 +101,27 @@ public:
 
         while(true) {
             std::pair<DNode<K,V>*, DNode<K,V>*> res = internal_find(head, key);
+            // printf("Internal find completed!\n");
             DNode<K,V>* curr = res.second;
             DNode<K,V>* prev = res.first;
             uint ptag = prev->get_tag();
             if (curr != NULL && (curr->get_key() == key)) {
                 return false;
             }
-            // printf("Finished internal find!\n");
+            // printf("Done getting results from find!\n");
             node->set_next(curr);
-            // printf("Prev next: %p\n", prev->next);
+            // printf("Changed next pointer!\n");
+            // printf("Prev: %p\n", prev);
             // printf("Curr: %p\n", curr);
             // printf("New node: %p\n", node);
-            typename DNode<K, V>::pair* old;
-            old->next = curr;
-            old->tag = ptag;
-            typename DNode<K, V>::pair* newVal;
-            newVal->next = node;
-            newVal->tag = ptag + 1;
-            if (__sync_bool_compare_and_swap(&(prev->nextTag), old, newVal))
+            typename DNode<K, V>::pair old;
+            old.next = curr;
+            old.tag = ptag;
+            typename DNode<K, V>::pair newVal;
+            newVal.next = node;
+            newVal.tag = ptag + 1;
+            // printf("Before DCAS\n");
+            if ((prev->nextTag).compare_exchange_weak(old, newVal, std::memory_order_release, std::memory_order_relaxed))
             {
                 return true;
             }
@@ -141,25 +147,25 @@ public:
             uint ctag = curr->get_tag();
             uint ptag = prev->get_tag();
             DNode<K,V>* next = unmarked(curr)->get_next();
-            typename DNode<K, V>::pair* old1;
-            old1->next = next;
-            old1->tag = ctag;
-            typename DNode<K, V>::pair* newVal1;
-            newVal1->next = marked(next);
-            newVal1->tag = ctag + 1;
+            typename DNode<K, V>::pair old1;
+            old1.next = next;
+            old1.tag = ctag;
+            typename DNode<K, V>::pair newVal1;
+            newVal1.next = marked(next);
+            newVal1.tag = ctag + 1;
             if (!is_marked(next) &&
-                !__sync_bool_compare_and_swap(&(unmarked(curr)->nextTag), old1, newVal1))
+                !(unmarked(curr)->nextTag).compare_exchange_weak(old1, newVal1, std::memory_order_release, std::memory_order_relaxed))
             {
                 continue;
             }
 
-            typename DNode<K, V>::pair* old2;
-            old2->next = curr;
-            old2->tag = ptag;
-            typename DNode<K, V>::pair* newVal2;
-            newVal2->next = next;
-            newVal2->tag = ptag + 1;
-            if (__sync_bool_compare_and_swap(&(unmarked(prev)->nextTag), old2, newVal2)) {
+            typename DNode<K, V>::pair old2;
+            old2.next = curr;
+            old2.tag = ptag;
+            typename DNode<K, V>::pair newVal2;
+            newVal2.next = next;
+            newVal2.tag = ptag + 1;
+            if ((unmarked(prev)->nextTag).compare_exchange_weak(old2, newVal2, std::memory_order_release, std::memory_order_relaxed)) {
                 delete(curr);
             }
             else

@@ -1,3 +1,5 @@
+#include <atomic>
+
 template <typename K, typename V>
 class DNode {
 private:
@@ -8,26 +10,30 @@ private:
 public:
 
     struct pair {
-        DNode* next;
         uint tag;
+        DNode* next;
     };
 
-    pair* nextTag;
+    std::atomic<pair> nextTag;
 
     DNode(K ke, V val, DNode* n = NULL, uint t = 0) {
         key = ke;
         data = val;
-        nextTag = new pair();
-        nextTag->next = n;
-        nextTag->tag = t;
+        // nextTag = new pair();
+        pair temp;
+        temp.next = n;
+        temp.tag = t;
+        nextTag.store(temp);
     }
 
     DNode(DNode* n = NULL) {
         key = 0;
         data = 0;
-        nextTag = new pair();
-        nextTag->next = NULL;
-        nextTag->tag = 0;
+        // nextTag = new pair();
+        pair temp;
+        temp.next = NULL;
+        temp.tag = 0;
+        nextTag.store(temp);
     }
 
     K get_key() {
@@ -49,20 +55,24 @@ public:
     }
 
     DNode* get_next() {
-        return nextTag->next;
+        return nextTag.load().next;
     }
 
     DNode* set_next(DNode* n) {
-        nextTag->next = n;
+        pair temp = nextTag.load();
+        temp.next = n;
+        nextTag.store(temp);
         return this;
     }
 
     uint get_tag() {
-        return nextTag->tag;
+        return nextTag.load().tag;
     }
 
     DNode* set_tag(uint t) {
-        nextTag->tag = t;
+        pair temp = nextTag.load();
+        temp.tag = t;
+        nextTag.store(temp);
         return this;
     }
 
