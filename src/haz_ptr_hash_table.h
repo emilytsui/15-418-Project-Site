@@ -35,7 +35,6 @@ private:
         HPNode<K,V>* prev = head;
         HPNode<K,V>* curr = prev->get_next();
         std::pair<HPNode<K,V>*, HPNode<K,V>*> res;
-        // &hazardPtrs[3*id+1] = curr;
         guards.protect(3*id+1, prev->next);
         if ((unmarked(prev))->get_next() != curr)
         {
@@ -50,7 +49,6 @@ private:
                 return res;
             }
             HPNode<K,V>* next = (unmarked(curr))->get_next();
-            // *&hazardPtrs[3*id] = next;
             guards.protect(3*id, (unmarked(curr))->next);
             if ((unmarked(curr))->get_next() != next) {
                 goto try_again;
@@ -75,7 +73,7 @@ private:
             }
             else
             {
-                // if (__sync_bool_compare_and_swap(&(prev->next), curr.load(), unmarked(next))) {
+                // if (__sync_bool_compare_and_swap(&(prev->next), curr, unmarked(next))) {
                 if ((prev->next).compare_exchange_weak(curr, unmarked(next))) {
                     // garbage collection - delete(curr)
                     cds::gc::HP::retire< disposer< HPNode<K,V> > >(curr);
@@ -95,7 +93,7 @@ public:
     int table_size;
     int (*hash_fn) (K);
     std::vector< HPNode<K,V>* > table;
-    cds::gc::HP::GuardArray< maxThreads * 3 > guards;
+    cds::gc::HP::GuardArray<maxThreads*3> guards;
 
     HazPtrHashTable(const int num_buckets, int (*hash) (K)) {
         table_size = num_buckets;
@@ -127,7 +125,7 @@ public:
             // printf("Prev next: %p\n", prev->next);
             // printf("Curr: %p\n", curr);
             // printf("New node: %p\n", node);
-            // if (__sync_bool_compare_and_swap(&((prev->next).load()), curr, node))
+            // if (__sync_bool_compare_and_swap(&(prev->next), curr, node))
             if ((prev->next).compare_exchange_weak(curr, node))
             {
                 result = true;
@@ -157,7 +155,6 @@ public:
                 break;
             }
             HPNode<K,V>* next = unmarked(curr)->get_next();
-            // HPNode<K,V>* next = unmarked(curr)->get_next();
             if (!is_marked(next) &&
                 !(unmarked(curr)->next).compare_exchange_weak(next, marked(next)))
                 // !__sync_bool_compare_and_swap(&(unmarked(curr)->next), next, marked(next)))

@@ -22,10 +22,18 @@ static std::vector<std::pair<Instr, std::pair<int, int> > > input;
 SeqHashTable<int, int>* baseline;
 HazPtrHashTable<int, int>* htable;
 
-const char *args[] = {"tests/correctness-small.txt",
-                      "tests/correctness1.txt",
+const char *args1[] = { "tests/correctness1.txt",
                       "tests/correctness2.txt"};
-std::vector<std::string> testfiles(args, args + sizeof(args)/sizeof(args[0]));
+std::vector<std::string> corrtestfiles(args1, args1 + sizeof(args1)/sizeof(args1[0]));
+
+const char *args2[] = {"tests/uniform_all_test.txt",
+                      "tests/chunked_all.txt",
+                      "tests/30p_del_all.txt",
+                      "tests/25p_del_all.txt",
+                      "tests/20p_del_all.txt",
+                      "tests/15p_del_all.txt",
+                      "tests/10p_del_all.txt"};
+std::vector<std::string> perftestfiles(args2, args2 + sizeof(args2)/sizeof(args2[0]));
 
 int hash(int tag) {
     int temp = tag;
@@ -109,26 +117,30 @@ void* hazPtrRun(void *arg) {
     pthread_exit(NULL);
 }
 
-void seqRun(SeqHashTable<int, int>* htable)
+double seqRun(SeqHashTable<int, int>* htable)
 {
+    double startTime = CycleTimer::currentSeconds();
     for (int i = 0; i < input.size(); i++)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
+        LLNode<int, int>* res;
         switch(instr.first)
         {
             case insert:
-                htable->insert(instr.second.first, instr.second.second); // Can Fail
+                htable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                htable->remove(instr.second.first); // Can Fail
+                res = htable->remove(instr.second.first);
                 break;
             case lookup:
-                htable->find(instr.second.first); // Can Fail
+                res = htable->find(instr.second.first);
                 break;
             default:
                 break;
         }
     }
+    double dt = CycleTimer::currentSeconds() - startTime;
+    return dt;
 }
 
 void testHazPtrCorrectness(SeqHashTable<int, int>* baseline, HazPtrHashTable<int, int>* htable) {
@@ -170,17 +182,18 @@ int main() {
     {
         ids[z] = z;
     }
-    for (uint i = 0; i < testfiles.size(); i++) {
-        parseText(testfiles[i].c_str());
+    for (uint i = 0; i < corrtestfiles.size(); i++) {
+        parseText(corrtestfiles[i].c_str());
         baseline = new SeqHashTable<int, int>(10000, &hash);
         seqRun(baseline);
-        printf("Correctness Testing file: %s for hazard pointer lock-free hash table\n", testfiles[i].c_str());
+        printf("Correctness Testing file: %s for hazard pointer lock-free hash table\n", corrtestfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
             cds::Initialize();
             {
                 cds::gc::HP hpGC(48, 16);
                 cds::threading::Manager::attachThread();
+
                 htable = new HazPtrHashTable<int, int>(10000, &hash);
                 numThreads = j;
                 for (uint id = 0; id < j; id++)
@@ -199,4 +212,38 @@ int main() {
         delete(baseline);
     }
     printf("Correctness Tests Complete!\n");
+    double baseTime;
+    for (uint i = 0; i < perftestfiles.size(); i++) {
+        printf("\nPerformance Testing file: %s on lock-free hash table with hazard pointers\n", perftestfiles[i].c_str());
+        parseText(perftestfiles[i].c_str());
+        baseline = new SeqHashTable<int, int>(10000, &hash);
+        baseTime = seqRun(baseline);
+        printf("Sequential Test complete in %f ms!\n", (1000.f * baseTime));
+        for (uint j = 1; j <= 16; j *= 2)
+        {
+            cds::Initialize();
+            {
+                cds::gc::HP hpGC(48, 16);
+                cds::threading::Manager::attachThread();
+
+                htable = new HazPtrHashTable<int, int>(10000, &hash);
+                numThreads = j;
+                double startTime = CycleTimer::currentSeconds();
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_create(&threads[id], NULL, hazPtrRun, &ids[id]);
+                }
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_join(threads[id], NULL);
+                }
+                double dt = CycleTimer::currentSeconds() - startTime;
+                printf("%d Thread Hazard Pointer Test completed in %f ms!\n", numThreads, (1000.f * dt));
+                printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
+                delete(htable);
+            }
+            cds::Terminate();
+        }
+        delete(baseline);
+    }
 }
