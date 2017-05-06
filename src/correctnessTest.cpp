@@ -22,8 +22,7 @@ SeqHashTable<int, int>* baseline;
 FgHashTable<int, int>* htable;
 MemLeakHashTable<int, int>* lockFreeTable;
 
-const char *args[] = {"tests/correctness-small.txt",
-                      "tests/correctness1.txt",
+const char *args[] = {"tests/correctness1.txt",
                       "tests/correctness2.txt"};
 std::vector<std::string> testfiles(args, args + sizeof(args)/sizeof(args[0]));
 
