@@ -79,7 +79,6 @@ void parseText(const std::string &filename)
 void* hazPtrRun(void *arg) {
     // Attach the thread to libcds infrastructure
     cds::threading::Manager::attachThread();
-    // printf("In delete Optimal\n");
     int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
     int start = instrPerThread * id;
@@ -180,7 +179,8 @@ int main() {
         {
             cds::Initialize();
             {
-                cds::gc::HP hpGC;
+                cds::gc::HP hpGC(48, 16);
+                cds::threading::Manager::attachThread();
                 htable = new HazPtrHashTable<int, int>(10000, &hash);
                 numThreads = j;
                 for (uint id = 0; id < j; id++)

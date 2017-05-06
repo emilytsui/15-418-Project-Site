@@ -4,7 +4,7 @@
 #include "tools/cds-2.2.0/build/include/cds/init.h"
 #include "tools/cds-2.2.0/build/include/cds/gc/hp.h"
 
-static CDS_CONSTEXPR size_t const hazardPtrCount = 16;
+static CDS_CONSTEXPR size_t const maxThreads = 16;
 
 template <typename T>
 struct disposer {
@@ -16,8 +16,6 @@ struct disposer {
 template <typename K, typename V>
 class HazPtrHashTable {
 private:
-
-    std::vector< HPNode<K,V>** > hazardPtrs;
 
     HPNode<K,V>* marked(HPNode<K,V>* node) {
         return (HPNode<K,V>*)((unsigned long) node | 0x1);
@@ -97,7 +95,7 @@ public:
     int table_size;
     int (*hash_fn) (K);
     std::vector< HPNode<K,V>* > table;
-    cds::gc::HP::GuardArray< hazardPtrCount * 3 > guards;
+    cds::gc::HP::GuardArray< maxThreads * 3 > guards;
 
     HazPtrHashTable(const int num_buckets, int (*hash) (K)) {
         table_size = num_buckets;
