@@ -8,6 +8,8 @@
 #include "tools/cycle_timer.h"
 #include "seq_hash_table.h"
 #include "haz_ptr_hash_table.h"
+#include "tools/cds-2.2.0/build/include/cds/init.h"
+#include "tools/cds-2.2.0/build/include/cds/gc/hp.h"
 
 enum Instr {
     insert,
@@ -75,6 +77,8 @@ void parseText(const std::string &filename)
 }
 
 void* hazPtrRun(void *arg) {
+    // Attach the thread to libcds infrastructure
+    cds::threading::Manager::attachThread();
     // printf("In delete Optimal\n");
     int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
@@ -101,6 +105,8 @@ void* hazPtrRun(void *arg) {
                 break;
         }
     }
+    // Detach thread when terminating
+    cds::threading::Manager::detachThread();
     pthread_exit(NULL);
 }
 
@@ -132,7 +138,7 @@ void testHazPtrCorrectness(SeqHashTable<int, int>* baseline, HazPtrHashTable<int
         LLNode<int, int>* curr = baseline->table[i];
         while(curr != NULL)
         {
-            LLNode<int, int>* res = htable->find(curr->get_key(), 0);
+            HPNode<int, int>* res = htable->find(curr->get_key(), 0);
             if(res == NULL || res->get_data() != curr->get_data())
             {
                 printf("Incorrect: Lock-free Hash Table doesn't contain (%d, %d)\n", curr->get_key(), curr->get_data());
@@ -142,7 +148,7 @@ void testHazPtrCorrectness(SeqHashTable<int, int>* baseline, HazPtrHashTable<int
     }
     for (int j = 0; j < htable->table_size; j++)
     {
-        LLNode<int, int>* curr = htable->table[j]->get_next();
+        HPNode<int, int>* curr = htable->table[j]->get_next();
         // printf("Next pointer: %p\n", curr);
         while(curr != NULL)
         {
@@ -172,18 +178,23 @@ int main() {
         printf("Correctness Testing file: %s for hazard pointer lock-free hash table\n", testfiles[i].c_str());
         for (uint j = 1; j <= 16; j *= 2)
         {
-            htable = new HazPtrHashTable<int, int>(10000, &hash);
-            numThreads = j;
-            for (uint id = 0; id < j; id++)
+            cds::Initialize();
             {
-                pthread_create(&threads[id], NULL, hazPtrRun, &ids[id]);
+                cds::gc::HP hpGC;
+                htable = new HazPtrHashTable<int, int>(10000, &hash);
+                numThreads = j;
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_create(&threads[id], NULL, hazPtrRun, &ids[id]);
+                }
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_join(threads[id], NULL);
+                }
+                testHazPtrCorrectness(baseline, htable);
+                delete(htable);
             }
-            for (uint id = 0; id < j; id++)
-            {
-                pthread_join(threads[id], NULL);
-            }
-            testHazPtrCorrectness(baseline, htable);
-            delete(htable);
+            cds::Terminate();
         }
         delete(baseline);
     }

@@ -7,7 +7,7 @@ correctness: correctnessTest.cpp fg_hash_table.h seq_hash_table.h mem_leak_hash_
 	g++ correctnessTest.cpp -o correctness -lpthread
 
 hazptr: hazPtrTest.cpp haz_ptr_hash_table.h seq_hash_table.h tools/linked_list_node.h
-	g++ -std=c++11 -I./tools/cds-2.2.0/build/include hazPtrTest.cpp -o hazptr -lpthread -lcds -L./tools/cds-2.2.0/build/lib64 -fno-strict-aliasing
+	g++ -std=c++11 -I./tools/cds-2.2.0/build/include hazPtrTest.cpp -o hazptr -lpthread -L./tools/cds-2.2.0/build/lib64 -lcds -fno-strict-aliasing
 
 dcas: x86Test.cpp dcas_hash_table.h seq_hash_table.h tools/linked_list_node.h tools/dcas_node.h
 	g++ -std=c++11 -m32 -mcx16 x86Test.cpp -o dcas -lpthread
