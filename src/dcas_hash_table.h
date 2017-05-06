@@ -88,8 +88,7 @@ public:
         // table.resize(num_buckets); // dummy values
         for (int i = 0; i < num_buckets; i++)
         {
-            DNode<K,V>* node = new DNode<K, V>(0, 0, NULL, 0);
-            table[i] = node;
+            table[i] = new DNode<K, V>(0, 0, NULL, 0);
         }
     }
 

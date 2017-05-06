@@ -23,7 +23,7 @@ public:
         pair temp;
         temp.next = n;
         temp.tag = t;
-        nextTag.store(temp);
+        nextTag.store(temp, std::memory_order_release);
     }
 
     DNode(DNode* n = NULL) {
@@ -33,7 +33,7 @@ public:
         pair temp;
         temp.next = NULL;
         temp.tag = 0;
-        nextTag.store(temp);
+        nextTag.store(temp, std::memory_order_release);
     }
 
     K get_key() {
@@ -55,24 +55,24 @@ public:
     }
 
     DNode* get_next() {
-        return nextTag.load().next;
+        return nextTag.load(std::memory_order_acquire).next;
     }
 
     DNode* set_next(DNode* n) {
-        pair temp = nextTag.load();
+        pair temp = nextTag.load(std::memory_order_acquire);
         temp.next = n;
-        nextTag.store(temp);
+        nextTag.store(temp, std::memory_order_release);
         return this;
     }
 
     uint get_tag() {
-        return nextTag.load().tag;
+        return nextTag.load(std::memory_order_acquire).tag;
     }
 
     DNode* set_tag(uint t) {
-        pair temp = nextTag.load();
+        pair temp = nextTag.load(std::memory_order_acquire);
         temp.tag = t;
-        nextTag.store(temp);
+        nextTag.store(temp, std::memory_order_release);
         return this;
     }
 

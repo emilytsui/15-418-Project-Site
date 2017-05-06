@@ -4,6 +4,8 @@
 #include <string>
 #include <cassert>
 #include <pthread.h>
+#include <ctime>
+#include <chrono>
 
 #include "tools/cycle_timer.h"
 #include "seq_hash_table.h"
@@ -20,8 +22,7 @@ static std::vector<std::pair<Instr, std::pair<int, int> > > input;
 SeqHashTable<int, int>* baseline;
 DCASHashTable<int, int>* dcasTable;
 
-const char *args1[] = {"tests/correctness-small.txt",
-                      "tests/correctness1.txt",
+const char *args1[] = {"tests/correctness1.txt",
                       "tests/correctness2.txt"};
 std::vector<std::string> corrtestfiles(args1, args1 + sizeof(args1)/sizeof(args1[0]));
 
@@ -85,7 +86,7 @@ void parseText(const std::string &filename)
 
 void* dcasRun(void *arg) {
     // printf("In delete Optimal\n");
-    double startTime = CycleTimer::currentSeconds();
+    // double startTime = std::clock();
     int id = *(int*)arg;
     int instrPerThread = input.size() / numThreads;
     int start = instrPerThread * id;
@@ -111,14 +112,14 @@ void* dcasRun(void *arg) {
                 break;
         }
     }
-    double dt = CycleTimer::currentSeconds() - startTime;
-    // pthread_exit(NULL);
+    // double dt = (std::clock() - startTime) / (double) CLOCKS_PER_SEC;
     // printf("Before thread return %f\n", dt * 1000.f);
+    // pthread_exit(NULL);
 }
 
 double seqRun(SeqHashTable<int, int>* htable)
 {
-    double startTime = CycleTimer::currentSeconds();
+    auto startTime = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < input.size(); i++)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
@@ -138,8 +139,9 @@ double seqRun(SeqHashTable<int, int>* htable)
                 break;
         }
     }
-    double dt = CycleTimer::currentSeconds() - startTime;
-    printf("Sequential Test complete in %f ms!\n", (1000.f * dt));
+    std::chrono::duration<double, std::milli> fp_ms = (std::chrono::high_resolution_clock::now() - startTime);
+    double dt = fp_ms.count();
+    printf("Sequential Test complete in %f ms!\n", dt);
     return dt;
 }
 
@@ -168,7 +170,7 @@ void testDCASCorrectness(SeqHashTable<int, int>* baseline, DCASHashTable<int, in
             if(res == NULL || res->get_data() != curr->get_data())
             {
                 printf("Incorrect: Lock-free Hash Table contains additional elem (%d, %d)\n", curr->get_key(), curr->get_data());
-                printf("Element: %d\n", count);
+                printf("Element: %d in chain %d\n", count, j);
             }
             curr = curr->get_next();
             count++;
@@ -219,7 +221,7 @@ int main() {
         {
             dcasTable = new DCASHashTable<int, int>(10000, &hash);
             numThreads = j;
-            double startTime = CycleTimer::currentSeconds();
+            auto startTime = std::chrono::high_resolution_clock::now();
             // printf("Start time: %f\n", startTime);
             for (uint id = 0; id < j; id++)
             {
@@ -229,9 +231,9 @@ int main() {
             {
                 pthread_join(threads[id], NULL);
             }
-            double dt = CycleTimer::currentSeconds() - startTime;
-            // printf("End time: %f\n", CycleTimer::currentSeconds());
-            printf("%d Thread DCAS lock-free Test completed in %f ms!\n", numThreads, (1000.f * dt));
+            std::chrono::duration<double, std::milli> fp_ms = (std::chrono::high_resolution_clock::now() - startTime);
+            double dt = fp_ms.count();
+            printf("%d Thread DCAS lock-free Test completed in %f ms!\n", numThreads, dt);
             printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
             delete(dcasTable);
         }
