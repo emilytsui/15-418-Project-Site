@@ -52,8 +52,6 @@ private:
                 return res;
             }
             HPNode<K,V>* next = (unmarked(curr))->get_next();
-            std::atomic< HPNode<K,V>* > nextAtomic;
-            nextAtomic.store(next);
             // *&hazardPtrs[3*id] = next;
             guards.protect(3*id, (unmarked(curr))->next);
             if ((unmarked(curr))->get_next() != next) {
