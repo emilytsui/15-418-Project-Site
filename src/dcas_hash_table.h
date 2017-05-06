@@ -64,7 +64,7 @@ private:
                 typename DNode<K, V>::pair newVal;
                 newVal.next = unmarked(next);
                 newVal.tag = ptag + 1;
-                if ((prev->nextTag).compare_exchange_weak(old, newVal, std::memory_order_release, std::memory_order_relaxed)) {
+                if ((prev->nextTag).compare_exchange_weak(old, newVal)) {
                     unmarked(curr)->set_tag(ptag + 1);
                 }
                 else
@@ -120,7 +120,7 @@ public:
             newVal.next = node;
             newVal.tag = ptag + 1;
             // printf("Before DCAS\n");
-            if ((prev->nextTag).compare_exchange_weak(old, newVal, std::memory_order_release, std::memory_order_relaxed))
+            if ((prev->nextTag).compare_exchange_weak(old, newVal))
             {
                 return true;
             }
@@ -153,7 +153,7 @@ public:
             newVal1.next = marked(next);
             newVal1.tag = ctag + 1;
             if (!is_marked(next) &&
-                !(unmarked(curr)->nextTag).compare_exchange_weak(old1, newVal1, std::memory_order_release, std::memory_order_relaxed))
+                !(unmarked(curr)->nextTag).compare_exchange_weak(old1, newVal1))
             {
                 continue;
             }
@@ -164,7 +164,7 @@ public:
             typename DNode<K, V>::pair newVal2;
             newVal2.next = next;
             newVal2.tag = ptag + 1;
-            if ((unmarked(prev)->nextTag).compare_exchange_weak(old2, newVal2, std::memory_order_release, std::memory_order_relaxed)) {
+            if ((unmarked(prev)->nextTag).compare_exchange_weak(old2, newVal2)) {
                 delete(curr);
             }
             else
