@@ -181,9 +181,9 @@ void testDCASCorrectness(SeqHashTable<int, int>* baseline, DCASHashTable<int, in
 
 int main() {
 
-    pthread_t threads[16];
-    int ids[16];
-    for (uint z = 0; z < 16; z++)
+    pthread_t threads[64];
+    int ids[64];
+    for (uint z = 0; z < 64; z++)
     {
         ids[z] = z;
     }
@@ -217,7 +217,7 @@ int main() {
         parseText(perftestfiles[i].c_str());
         baseline = new SeqHashTable<int, int>(10000, &hash);
         baseTime = seqRun(baseline);
-        for (uint j = 1; j <= 16; j *= 2)
+        for (uint j = 1; j <= 64; j *= 2)
         {
             dcasTable = new DCASHashTable<int, int>(10000, &hash);
             numThreads = j;
