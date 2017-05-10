@@ -29,12 +29,13 @@ const char *args1[] = { "tests/correctness1.txt",
 std::vector<std::string> corrtestfiles(args1, args1 + sizeof(args1)/sizeof(args1[0]));
 
 const char *args2[] = {"tests/uniform_all_test.txt",
-                      "tests/chunked_all.txt",
                       "tests/30p_del_all.txt",
                       "tests/25p_del_all.txt",
                       "tests/20p_del_all.txt",
                       "tests/15p_del_all.txt",
-                      "tests/10p_del_all.txt"};
+                      "tests/10p_del_all.txt",
+                      "tests/5p_del_5p_ins.txt",
+                      "tests/10p_del_10p_ins.txt"};
 std::vector<std::string> perftestfiles(args2, args2 + sizeof(args2)/sizeof(args2[0]));
 
 int hash(int tag) {
@@ -226,13 +227,13 @@ int main() {
         baseline = new SeqHashTable<int, int>(10000, &hash);
         baseTime = seqRun(baseline);
         printf("Sequential Test complete in %f ms!\n", (1000.f * baseTime));
-        for (uint j = 1; j <= MAX_THREADS; j *= 2)
+        for (uint j = 64; j <= MAX_THREADS; j *= 2)
         {
             double bestDt = 0;
             for (int a = 0; a < 5; a++) {
                 cds::Initialize();
                 {
-                    cds::gc::HP hpGC(MAX_THREADS*3, 2);
+                    cds::gc::HP hpGC(MAX_THREADS*3, 20);
                     cds::threading::Manager::attachThread();
 
                     htable = new HazPtrHashTable<int, int>(10000, &hash);

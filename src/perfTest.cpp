@@ -27,7 +27,6 @@ FgHashTable<int, int>* htable;
 MemLeakHashTable<int, int>* lockFreeTable;
 
 const char *args[] = {"tests/uniform_all_test.txt",
-                      "tests/chunked_all.txt",
                       "tests/30p_del_all.txt",
                       "tests/25p_del_all.txt",
                       "tests/20p_del_all.txt",
@@ -115,35 +114,6 @@ void* lockFreeRun(void* arg) {
     pthread_exit(NULL);
 }
 
-void* lockFreeRunInter(void* arg) {
-    int id = *(int*)arg;
-    // int instrPerThread = input.size() / numThreads;
-    // int start = instrPerThread * id;
-    // int end = (start + instrPerThread < input.size()) ? (start + instrPerThread) : input.size();
-    for (int i = id; i < input.size(); i += numThreads)
-    {
-        std::pair<Instr, std::pair<int, int> > instr = input[i];
-        LLNode<int, int>* res;
-        switch(instr.first)
-        {
-            case insert:
-                lockFreeTable->insert(instr.second.first, instr.second.second);
-                break;
-            case del:
-                lockFreeTable->remove(instr.second.first); // Can fail
-                // printf("Deleted node: %p\n", res);
-                break;
-            case lookup:
-                res = lockFreeTable->find(instr.second.first); // Can fail
-                // printf("Lookup returned: %p\n", res);
-                break;
-            default:
-                break;
-        }
-    }
-    pthread_exit(NULL);
-}
-
 void* fgRun(void* arg)
 {
     int id = *(int*)arg;
@@ -151,33 +121,6 @@ void* fgRun(void* arg)
     int start = instrPerThread * id;
     int end = (start + instrPerThread < input.size()) ? (start + instrPerThread) : input.size();
     for (int i = start; i < end; i++)
-    {
-        std::pair<Instr, std::pair<int, int> > instr = input[i];
-        switch(instr.first)
-        {
-            case insert:
-                htable->insert(instr.second.first, instr.second.second);
-                break;
-            case del:
-                htable->remove(instr.second.first); // Can fail
-                break;
-            case lookup:
-                htable->find(instr.second.first); // Can fail
-                break;
-            default:
-                break;
-        }
-    }
-    pthread_exit(NULL);
-}
-
-void* fgRunInter(void* arg)
-{
-    int id = *(int*)arg;
-    // int instrPerThread = input.size() / numThreads;
-    // int start = instrPerThread * id;
-    // int end = (start + instrPerThread < input.size()) ? (start + instrPerThread) : input.size();
-    for (int i = id; i < input.size(); i += numThreads)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
         switch(instr.first)
