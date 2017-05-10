@@ -227,7 +227,7 @@ int main() {
         baseline = new SeqHashTable<int, int>(10000, &hash);
         baseTime = seqRun(baseline);
         printf("Sequential Test complete in %f ms!\n", (1000.f * baseTime));
-        for (uint j = 64; j <= MAX_THREADS; j *= 2)
+        for (uint j = 1; j <= MAX_THREADS; j *= 2)
         {
             double bestDt = 0;
             for (int a = 0; a < 5; a++) {
