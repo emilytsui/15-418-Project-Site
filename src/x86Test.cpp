@@ -219,23 +219,31 @@ int main() {
         baseTime = seqRun(baseline);
         for (uint j = 1; j <= 64; j *= 2)
         {
-            dcasTable = new DCASHashTable<int, int>(10000, &hash);
-            numThreads = j;
-            auto startTime = std::chrono::high_resolution_clock::now();
-            // printf("Start time: %f\n", startTime);
-            for (uint id = 0; id < j; id++)
+            double bestTime = std::numeric_limits<double>::max();
+            for (int i = 0; i < 5; i++)
             {
-                pthread_create(&threads[id], NULL, dcasRun, &ids[id]);
+                dcasTable = new DCASHashTable<int, int>(10000, &hash);
+                numThreads = j;
+                auto startTime = std::chrono::high_resolution_clock::now();
+                // printf("Start time: %f\n", startTime);
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_create(&threads[id], NULL, dcasRun, &ids[id]);
+                }
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_join(threads[id], NULL);
+                }
+                std::chrono::duration<double, std::milli> fp_ms = (std::chrono::high_resolution_clock::now() - startTime);
+                double dt = fp_ms.count();
+                if (dt < bestTime)
+                {
+                    bestTime = dt;
+                }
+                delete(dcasTable);
             }
-            for (uint id = 0; id < j; id++)
-            {
-                pthread_join(threads[id], NULL);
-            }
-            std::chrono::duration<double, std::milli> fp_ms = (std::chrono::high_resolution_clock::now() - startTime);
-            double dt = fp_ms.count();
-            printf("%d Thread DCAS lock-free Test completed in %f ms!\n", numThreads, dt);
-            printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
-            delete(dcasTable);
+            printf("%d Thread DCAS lock-free Test completed in %f ms!\n", numThreads, bestTime);
+            printf("%d Thread Speedup: %f\n", j, (baseTime / bestTime));
         }
         delete(baseline);
     }
