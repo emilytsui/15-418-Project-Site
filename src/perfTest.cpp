@@ -149,17 +149,16 @@ double seqRun(SeqHashTable<int, int>* htable)
     for (int i = 0; i < input.size(); i++)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
-        LLNode<int, int>* res;
         switch(instr.first)
         {
             case insert:
                 htable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                res = htable->remove(instr.second.first);
+                htable->remove(instr.second.first);
                 break;
             case lookup:
-                res = htable->find(instr.second.first);
+                htable->find(instr.second.first);
                 break;
             default:
                 break;

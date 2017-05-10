@@ -44,7 +44,7 @@ public:
         return true;
     }
 
-    LLNode<K,V>* remove(K key) {
+    bool remove(K key) {
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* result = NULL;
         LLNode<K,V>* curr = table[hashIndex];
@@ -61,14 +61,15 @@ public:
                 {
                     table[hashIndex] = result->get_next();
                 }
-                return result;
+                delete(result);
+                return true;
             }
             else {
                 prev = curr;
                 curr = curr->get_next();
             }
         }
-        return result;
+        return false;
     }
 
     LLNode<K,V>* find(K key) {

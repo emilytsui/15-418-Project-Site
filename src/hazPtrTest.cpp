@@ -34,8 +34,7 @@ const char *args2[] = {"tests/uniform_all_test.txt",
                       "tests/25p_del_all.txt",
                       "tests/20p_del_all.txt",
                       "tests/15p_del_all.txt",
-                      "tests/10p_del_all.txt",
-                      "tests/5p_del_5p_ins.txt"};
+                      "tests/10p_del_all.txt"};
 std::vector<std::string> perftestfiles(args2, args2 + sizeof(args2)/sizeof(args2[0]));
 
 int hash(int tag) {
@@ -126,17 +125,16 @@ double seqRun(SeqHashTable<int, int>* htable)
     for (int i = 0; i < input.size(); i++)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
-        LLNode<int, int>* res;
         switch(instr.first)
         {
             case insert:
                 htable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                res = htable->remove(instr.second.first);
+                htable->remove(instr.second.first);
                 break;
             case lookup:
-                res = htable->find(instr.second.first);
+                htable->find(instr.second.first);
                 break;
             default:
                 break;
