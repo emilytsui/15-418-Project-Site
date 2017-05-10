@@ -112,6 +112,35 @@ void* lockFreeRun(void* arg) {
     pthread_exit(NULL);
 }
 
+void* lockFreeRunInter(void* arg) {
+    int id = *(int*)arg;
+    // int instrPerThread = input.size() / numThreads;
+    // int start = instrPerThread * id;
+    // int end = (start + instrPerThread < input.size()) ? (start + instrPerThread) : input.size();
+    for (int i = id; i < input.size(); i += numThreads)
+    {
+        std::pair<Instr, std::pair<int, int> > instr = input[i];
+        LLNode<int, int>* res;
+        switch(instr.first)
+        {
+            case insert:
+                lockFreeTable->insert(instr.second.first, instr.second.second);
+                break;
+            case del:
+                lockFreeTable->remove(instr.second.first); // Can fail
+                // printf("Deleted node: %p\n", res);
+                break;
+            case lookup:
+                res = lockFreeTable->find(instr.second.first); // Can fail
+                // printf("Lookup returned: %p\n", res);
+                break;
+            default:
+                break;
+        }
+    }
+    pthread_exit(NULL);
+}
+
 void* fgRun(void* arg)
 {
     int id = *(int*)arg;
@@ -121,17 +150,43 @@ void* fgRun(void* arg)
     for (int i = start; i < end; i++)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
-        LLNode<int, int>* res;
         switch(instr.first)
         {
             case insert:
                 htable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                res = htable->remove(instr.second.first); // Can fail
+                htable->remove(instr.second.first); // Can fail
                 break;
             case lookup:
-                res = htable->find(instr.second.first); // Can fail
+                htable->find(instr.second.first); // Can fail
+                break;
+            default:
+                break;
+        }
+    }
+    pthread_exit(NULL);
+}
+
+void* fgRunInter(void* arg)
+{
+    int id = *(int*)arg;
+    // int instrPerThread = input.size() / numThreads;
+    // int start = instrPerThread * id;
+    // int end = (start + instrPerThread < input.size()) ? (start + instrPerThread) : input.size();
+    for (int i = id; i < input.size(); i += numThreads)
+    {
+        std::pair<Instr, std::pair<int, int> > instr = input[i];
+        switch(instr.first)
+        {
+            case insert:
+                htable->insert(instr.second.first, instr.second.second);
+                break;
+            case del:
+                htable->remove(instr.second.first); // Can fail
+                break;
+            case lookup:
+                htable->find(instr.second.first); // Can fail
                 break;
             default:
                 break;
@@ -146,17 +201,16 @@ double seqRun(SeqHashTable<int, int>* htable)
     for (int i = 0; i < input.size(); i++)
     {
         std::pair<Instr, std::pair<int, int> > instr = input[i];
-        LLNode<int, int>* res;
         switch(instr.first)
         {
             case insert:
                 htable->insert(instr.second.first, instr.second.second);
                 break;
             case del:
-                res = htable->remove(instr.second.first);
+                htable->remove(instr.second.first);
                 break;
             case lookup:
-                res = htable->find(instr.second.first);
+                htable->find(instr.second.first);
                 break;
             default:
                 break;

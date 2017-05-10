@@ -54,7 +54,7 @@ public:
         return true;
     }
 
-    LLNode<K,V>* remove(K key) {
+    bool remove(K key) {
         int hashIndex = hash_fn(key) % table_size;
         LLNode<K,V>* result = NULL;
         LLNode<K,V>* prev = NULL;
@@ -73,7 +73,7 @@ public:
                     table[hashIndex] = result->get_next();
                 }
                 pthread_mutex_unlock(&locks[hashIndex]);
-                return result;
+                return true;
             }
             else {
                 prev = curr;
@@ -81,7 +81,7 @@ public:
             }
         }
         pthread_mutex_unlock(&locks[hashIndex]);
-        return result;
+        return true;
     }
 
     LLNode<K,V>* find(K key) {
