@@ -11,6 +11,8 @@
 #include "tools/cds-2.2.0/build/include/cds/init.h"
 #include "tools/cds-2.2.0/build/include/cds/gc/hp.h"
 
+#define MAX_THREADS 64
+
 enum Instr {
     insert,
     del,
@@ -176,9 +178,9 @@ void testHazPtrCorrectness(SeqHashTable<int, int>* baseline, HazPtrHashTable<int
 
 int main() {
 
-    pthread_t threads[16];
-    int ids[16];
-    for (uint z = 0; z < 16; z++)
+    pthread_t threads[MAX_THREADS];
+    int ids[MAX_THREADS];
+    for (uint z = 0; z < MAX_THREADS; z++)
     {
         ids[z] = z;
     }
@@ -191,7 +193,7 @@ int main() {
         {
             cds::Initialize();
             {
-                cds::gc::HP hpGC(48, 16);
+                cds::gc::HP hpGC(MAX_THREADS*3);
                 cds::threading::Manager::attachThread();
 
                 htable = new HazPtrHashTable<int, int>(10000, &hash);
@@ -212,6 +214,13 @@ int main() {
         delete(baseline);
     }
     printf("Correctness Tests Complete!\n");
+
+    pthread_t threads2[MAX_THREADS];
+    int ids2[MAX_THREADS];
+    for (uint z = 0; z < MAX_THREADS; z++)
+    {
+        ids2[z] = z;
+    }
     double baseTime;
     for (uint i = 0; i < perftestfiles.size(); i++) {
         printf("\nPerformance Testing file: %s on lock-free hash table with hazard pointers\n", perftestfiles[i].c_str());
@@ -219,11 +228,11 @@ int main() {
         baseline = new SeqHashTable<int, int>(10000, &hash);
         baseTime = seqRun(baseline);
         printf("Sequential Test complete in %f ms!\n", (1000.f * baseTime));
-        for (uint j = 1; j <= 16; j *= 2)
+        for (uint j = 1; j <= MAX_THREADS; j *= 2)
         {
             cds::Initialize();
             {
-                cds::gc::HP hpGC(48, 16);
+                cds::gc::HP hpGC(MAX_THREADS*3, 1, MAX_THREADS*3*12);
                 cds::threading::Manager::attachThread();
 
                 htable = new HazPtrHashTable<int, int>(10000, &hash);
@@ -231,11 +240,11 @@ int main() {
                 double startTime = CycleTimer::currentSeconds();
                 for (uint id = 0; id < j; id++)
                 {
-                    pthread_create(&threads[id], NULL, hazPtrRun, &ids[id]);
+                    pthread_create(&threads2[id], NULL, hazPtrRun, &ids2[id]);
                 }
                 for (uint id = 0; id < j; id++)
                 {
-                    pthread_join(threads[id], NULL);
+                    pthread_join(threads2[id], NULL);
                 }
                 double dt = CycleTimer::currentSeconds() - startTime;
                 printf("%d Thread Hazard Pointer Test completed in %f ms!\n", numThreads, (1000.f * dt));

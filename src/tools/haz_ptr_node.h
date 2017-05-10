@@ -1,6 +1,6 @@
 #pragma once
 
-#include <atomic>
+// #include <atomic>
 
 template <typename K, typename V>
 class HPNode {
@@ -10,12 +10,14 @@ private:
     V data;
 
 public:
-    std::atomic< HPNode<K,V>* > next;
+    // std::atomic< HPNode<K,V>* > next;
+    HPNode<K,V>* next;
 
     HPNode(K ke, V val, HPNode* n = NULL) {
         key = ke;
         data = val;
-        next.store(n);
+        // next.store(n);
+        next = n;
     }
 
     K get_key() {
@@ -37,11 +39,13 @@ public:
     }
 
     HPNode<K,V>* get_next() {
-        return next.load();
+        // return next.load();
+        return next;
     }
 
     HPNode<K,V>* set_next(HPNode* n) {
-        next.store(n);
+        // next.store(n);
+        next = n;
         return this;
     }
 

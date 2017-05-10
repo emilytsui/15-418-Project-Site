@@ -4,7 +4,7 @@
 #include "tools/cds-2.2.0/build/include/cds/init.h"
 #include "tools/cds-2.2.0/build/include/cds/gc/hp.h"
 
-static CDS_CONSTEXPR size_t const maxThreads = 16;
+static CDS_CONSTEXPR size_t const maxThreads = 64;
 
 template <typename T>
 struct disposer {
@@ -35,7 +35,8 @@ private:
         HPNode<K,V>* prev = head;
         HPNode<K,V>* curr = prev->get_next();
         std::pair<HPNode<K,V>*, HPNode<K,V>*> res;
-        guards.protect(3*id+1, prev->next);
+        // guards.protect(3*id+1, prev->next);
+        guards.assign(3*id+1, curr);
         if ((unmarked(prev))->get_next() != curr)
         {
             goto try_again;
@@ -49,7 +50,8 @@ private:
                 return res;
             }
             HPNode<K,V>* next = (unmarked(curr))->get_next();
-            guards.protect(3*id, (unmarked(curr))->next);
+            // guards.protect(3*id, (unmarked(curr))->next);
+            guards.assign(3*id, next);
             if ((unmarked(curr))->get_next() != next) {
                 goto try_again;
             }
@@ -67,14 +69,15 @@ private:
                     res.second = curr;
                     return res;
                 }
-                guards.protect(3*id+2, prev->next);
+                // guards.protect(3*id+2, prev->next);
+                guards.assign(3*id+2, curr);
                 prev = curr;
                 // *&hazardPtrs[3*id+2] = curr;
             }
             else
             {
-                // if (__sync_bool_compare_and_swap(&(prev->next), curr, unmarked(next))) {
-                if ((prev->next).compare_exchange_weak(curr, unmarked(next))) {
+                if (__sync_bool_compare_and_swap(&(prev->next), curr, unmarked(next))) {
+                // if ((prev->next).compare_exchange_weak(curr, unmarked(next))) {
                     // garbage collection - delete(curr)
                     cds::gc::HP::retire< disposer< HPNode<K,V> > >(curr);
                 }
@@ -83,7 +86,8 @@ private:
                     goto try_again;
                 }
             }
-            guards.protect(3*id+1, unmarked(curr)->next);
+            // guards.protect(3*id+1, unmarked(curr)->next);
+            guards.assign(3*id+1, next);
             curr = next;
             // *&hazardPtrs[3*id+1] = next;
         }
@@ -125,8 +129,8 @@ public:
             // printf("Prev next: %p\n", prev->next);
             // printf("Curr: %p\n", curr);
             // printf("New node: %p\n", node);
-            // if (__sync_bool_compare_and_swap(&(prev->next), curr, node))
-            if ((prev->next).compare_exchange_weak(curr, node))
+            if (__sync_bool_compare_and_swap(&(prev->next), curr, node))
+            // if ((prev->next).compare_exchange_weak(curr, node))
             {
                 result = true;
                 break;
@@ -156,13 +160,13 @@ public:
             }
             HPNode<K,V>* next = unmarked(curr)->get_next();
             if (!is_marked(next) &&
-                !(unmarked(curr)->next).compare_exchange_weak(next, marked(next)))
-                // !__sync_bool_compare_and_swap(&(unmarked(curr)->next), next, marked(next)))
+                // !(unmarked(curr)->next).compare_exchange_weak(next, marked(next)))
+                !__sync_bool_compare_and_swap(&(unmarked(curr)->next), next, marked(next)))
             {
                 continue;
             }
-            // if (__sync_bool_compare_and_swap(&(unmarked(prev)->next), curr, next)) {
-            if ((unmarked(prev)->next).compare_exchange_weak(curr, next)) {
+            if (__sync_bool_compare_and_swap(&(unmarked(prev)->next), curr, next)) {
+            // if ((unmarked(prev)->next).compare_exchange_weak(curr, next)) {
                 // garbage collection - delete(curr)
                 cds::gc::HP::retire< disposer< HPNode<K,V> > >(curr);
             }

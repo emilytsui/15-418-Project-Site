@@ -10,6 +10,8 @@
 #include "fg_hash_table.h"
 #include "mem_leak_hash_table.h"
 
+#define MAX_THREADS 64
+
 #define ALL_TESTS
 
 enum Instr {
@@ -168,9 +170,9 @@ double seqRun(SeqHashTable<int, int>* htable)
 
 int main() {
 
-    pthread_t threads[16];
-    int ids[16];
-    for (uint z = 0; z < 16; z++)
+    pthread_t threads[MAX_THREADS];
+    int ids[MAX_THREADS];
+    for (uint z = 0; z < MAX_THREADS; z++)
     {
         ids[z] = z;
     }
@@ -180,7 +182,7 @@ int main() {
         parseText(testfiles[i].c_str());
         baseline = new SeqHashTable<int, int>(10000, &hash);
         baseTime = seqRun(baseline);
-        for (uint j = 1; j <= 16; j *= 2)
+        for (uint j = 1; j <= MAX_THREADS; j *= 2)
         {
             htable = new FgHashTable<int, int>(10000, &hash);
             numThreads = j;
@@ -199,7 +201,7 @@ int main() {
             delete(htable);
         }
         printf("\nPerformance Testing file: %s on lock-free hash table with memory leaks\n", testfiles[i].c_str());
-        for (uint j = 1; j <= 16; j *= 2)
+        for (uint j = 1; j <= MAX_THREADS; j *= 2)
         {
             lockFreeTable = new MemLeakHashTable<int, int>(10000, &hash);
             numThreads = j;
