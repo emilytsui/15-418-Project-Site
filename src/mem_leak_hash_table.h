@@ -51,7 +51,7 @@ private:
             }
             else
             {
-                if (__sync_bool_compare_and_swap(&(prev->next), curr, unmarked(next))) {
+                if (prev->next == curr && __sync_bool_compare_and_swap(&(prev->next), curr, unmarked(next))) {
                     // garbage collection - delete(curr)
                 }
                 else
@@ -96,7 +96,7 @@ public:
             // printf("Prev next: %p\n", prev->next);
             // printf("Curr: %p\n", curr);
             // printf("New node: %p\n", node);
-            if (__sync_bool_compare_and_swap(&(prev->next), curr, node))
+            if (prev->next == curr && __sync_bool_compare_and_swap(&(prev->next), curr, node))
             {
                 return true;
             }
@@ -125,7 +125,7 @@ public:
             {
                 continue;
             }
-            if (__sync_bool_compare_and_swap(&(unmarked(prev)->next), curr, next)) {
+            if (unmarked(prev)->next == curr && __sync_bool_compare_and_swap(&(unmarked(prev)->next), curr, next)) {
                 // garbage collection - delete(curr)
             }
             else

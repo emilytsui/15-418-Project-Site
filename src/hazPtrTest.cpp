@@ -177,6 +177,7 @@ void testHazPtrCorrectness(SeqHashTable<int, int>* baseline, HazPtrHashTable<int
 }
 
 int main() {
+    printf("size of hazptrnode: %d", sizeof(new HPNode<int, int>(1, 5)));
 
     pthread_t threads[MAX_THREADS];
     int ids[MAX_THREADS];
@@ -230,28 +231,32 @@ int main() {
         printf("Sequential Test complete in %f ms!\n", (1000.f * baseTime));
         for (uint j = 1; j <= MAX_THREADS; j *= 2)
         {
-            cds::Initialize();
-            {
-                cds::gc::HP hpGC(MAX_THREADS*3, 1, MAX_THREADS*3*12);
-                cds::threading::Manager::attachThread();
+            double bestDt = 0;
+            for (int a = 0; a < 5; a++) {
+                cds::Initialize();
+                {
+                    cds::gc::HP hpGC(MAX_THREADS*3, 2);
+                    cds::threading::Manager::attachThread();
 
-                htable = new HazPtrHashTable<int, int>(10000, &hash);
-                numThreads = j;
-                double startTime = CycleTimer::currentSeconds();
-                for (uint id = 0; id < j; id++)
-                {
-                    pthread_create(&threads2[id], NULL, hazPtrRun, &ids2[id]);
+                    htable = new HazPtrHashTable<int, int>(10000, &hash);
+                    numThreads = j;
+                    double startTime = CycleTimer::currentSeconds();
+                    for (uint id = 0; id < j; id++)
+                    {
+                        pthread_create(&threads2[id], NULL, hazPtrRun, &ids2[id]);
+                    }
+                    for (uint id = 0; id < j; id++)
+                    {
+                        pthread_join(threads2[id], NULL);
+                    }
+                    double dt = CycleTimer::currentSeconds() - startTime;
+                    bestDt = bestDt == 0 ? dt : std::min(bestDt, dt);
+                    delete(htable);
                 }
-                for (uint id = 0; id < j; id++)
-                {
-                    pthread_join(threads2[id], NULL);
-                }
-                double dt = CycleTimer::currentSeconds() - startTime;
-                printf("%d Thread Hazard Pointer Test completed in %f ms!\n", numThreads, (1000.f * dt));
-                printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
-                delete(htable);
+                cds::Terminate();
             }
-            cds::Terminate();
+            printf("%d Thread Hazard Pointer Test completed in %f ms!\n", numThreads, (1000.f * bestDt));
+            printf("%d Thread Speedup: %f\n", j, (baseTime / bestDt));
         }
         delete(baseline);
     }
