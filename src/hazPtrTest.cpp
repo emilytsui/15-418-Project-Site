@@ -177,8 +177,6 @@ void testHazPtrCorrectness(SeqHashTable<int, int>* baseline, HazPtrHashTable<int
 }
 
 int main() {
-    printf("size of hazptrnode: %d", sizeof(new HPNode<int, int>(1, 5)));
-
     pthread_t threads[MAX_THREADS];
     int ids[MAX_THREADS];
     for (uint z = 0; z < MAX_THREADS; z++)
