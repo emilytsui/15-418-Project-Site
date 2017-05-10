@@ -10,6 +10,8 @@
 #include "fg_hash_table.h"
 #include "mem_leak_hash_table.h"
 
+#define MAX_THREADS 64
+
 #define ALL_TESTS
 
 enum Instr {
@@ -31,7 +33,8 @@ const char *args[] = {"tests/uniform_all_test.txt",
                       "tests/20p_del_all.txt",
                       "tests/15p_del_all.txt",
                       "tests/10p_del_all.txt",
-                  	  "tests/5p_del_5p_ins.txt"};
+                      "tests/5p_del_5p_ins.txt",
+                      "tests/10p_del_10p_ins.txt"};
 std::vector<std::string> testfiles(args, args + sizeof(args)/sizeof(args[0]));
 
 int hash(int tag) {
@@ -223,9 +226,9 @@ double seqRun(SeqHashTable<int, int>* htable)
 
 int main() {
 
-    pthread_t threads[64];
-    int ids[64];
-    for (uint z = 0; z < 64; z++)
+    pthread_t threads[MAX_THREADS];
+    int ids[MAX_THREADS];
+    for (uint z = 0; z < MAX_THREADS; z++)
     {
         ids[z] = z;
     }
@@ -235,42 +238,50 @@ int main() {
         parseText(testfiles[i].c_str());
         baseline = new SeqHashTable<int, int>(10000, &hash);
         baseTime = seqRun(baseline);
-        for (uint j = 1; j <= 64; j *= 2)
+        for (uint j = 1; j <= MAX_THREADS; j *= 2)
         {
-            htable = new FgHashTable<int, int>(10000, &hash);
-            numThreads = j;
-            double startTime = CycleTimer::currentSeconds();
-            for (uint id = 0; id < j; id++)
-            {
-                pthread_create(&threads[id], NULL, fgRun, &ids[id]);
+            double bestDt = 0;
+            for (int a = 0; a < 5; a++) {
+                htable = new FgHashTable<int, int>(10000, &hash);
+                numThreads = j;
+                double startTime = CycleTimer::currentSeconds();
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_create(&threads[id], NULL, fgRun, &ids[id]);
+                }
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_join(threads[id], NULL);
+                }
+                double dt = CycleTimer::currentSeconds() - startTime;
+                bestDt = bestDt == 0 ? dt : std::min(bestDt, dt);
+                delete(htable);
             }
-            for (uint id = 0; id < j; id++)
-            {
-                pthread_join(threads[id], NULL);
-            }
-            double dt = CycleTimer::currentSeconds() - startTime;
-            printf("%d Thread Fine-Grained Test completed in %f ms!\n", numThreads, (1000.f * dt));
-            printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
-            delete(htable);
+            printf("%d Thread Fine-Grained Test completed in %f ms!\n", numThreads, (1000.f * bestDt));
+            printf("%d Thread Speedup: %f\n", j, (baseTime / bestDt));
         }
         printf("\nPerformance Testing file: %s on lock-free hash table with memory leaks\n", testfiles[i].c_str());
-        for (uint j = 1; j <= 64; j *= 2)
+        for (uint j = 1; j <= MAX_THREADS; j *= 2)
         {
-            lockFreeTable = new MemLeakHashTable<int, int>(10000, &hash);
-            numThreads = j;
-            double startTime = CycleTimer::currentSeconds();
-            for (uint id = 0; id < j; id++)
-            {
-                pthread_create(&threads[id], NULL, lockFreeRun, &ids[id]);
+            double bestDt = 0;
+            for (int a = 0; a < 5; a++) {
+                lockFreeTable = new MemLeakHashTable<int, int>(10000, &hash);
+                numThreads = j;
+                double startTime = CycleTimer::currentSeconds();
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_create(&threads[id], NULL, lockFreeRun, &ids[id]);
+                }
+                for (uint id = 0; id < j; id++)
+                {
+                    pthread_join(threads[id], NULL);
+                }
+                double dt = CycleTimer::currentSeconds() - startTime;
+                bestDt = bestDt == 0 ? dt : std::min(bestDt, dt);
+                delete(lockFreeTable);
             }
-            for (uint id = 0; id < j; id++)
-            {
-                pthread_join(threads[id], NULL);
-            }
-            double dt = CycleTimer::currentSeconds() - startTime;
-            printf("%d Thread Lock-Free with Memory Leaks Test completed in %f ms!\n", numThreads, (1000.f * dt));
-            printf("%d Thread Speedup: %f\n", j, (baseTime / dt));
-            delete(lockFreeTable);
+            printf("%d Thread Lock-Free with Memory Leaks Test completed in %f ms!\n", numThreads, (1000.f * bestDt));
+            printf("%d Thread Speedup: %f\n", j, (baseTime / bestDt));
         }
         delete(baseline);
     }
