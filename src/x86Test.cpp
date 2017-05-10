@@ -32,7 +32,8 @@ const char *args2[] = {"tests/uniform_all_test.txt",
                       "tests/25p_del_all.txt",
                       "tests/20p_del_all.txt",
                       "tests/15p_del_all.txt",
-                      "tests/10p_del_all.txt"};
+                      "tests/10p_del_all.txt",
+                      "tests/5p_del_5p_ins.txt"};
 std::vector<std::string> perftestfiles(args2, args2 + sizeof(args2)/sizeof(args2[0]));
 
 int hash(int tag) {
