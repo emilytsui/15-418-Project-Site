@@ -233,7 +233,7 @@ int main() {
             for (int a = 0; a < 5; a++) {
                 cds::Initialize();
                 {
-                    cds::gc::HP hpGC(MAX_THREADS*3, 50);
+                    cds::gc::HP hpGC(MAX_THREADS*3, 70);
                     cds::threading::Manager::attachThread();
 
                     htable = new HazPtrHashTable<int, int>(10000, &hash);
