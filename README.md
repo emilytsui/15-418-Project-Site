@@ -27,7 +27,7 @@ It's hard to make a good performance lock-free hash table because of issues that
 - Implementation of fine-grained lock-based hash table
 - Implementation of lock-free hash table that allows for memory leaks (based on research paper)
 - Implementation of lock-free hash table based on the concept of double CAS (based on research paper)
-- Implementation of hazard-pointer lock-free hash table (based on research paper using [this library](https://github.com/khizmax/libcds)
+- Implementation of hazard-pointer lock-free hash table (based on research paper using [this library](https://github.com/khizmax/libcds))
 
 #### Hope to achieve
 - Implement RMC into our lock-free hash table
