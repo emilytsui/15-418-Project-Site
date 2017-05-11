@@ -205,7 +205,7 @@ int main() {
         ids[z] = z;
     }
     double baseTime;
-    for (int load_fac = 100; load_fac <= 500; /*load_fac = load_fac == 1 ? 5 : load_fac + 5*/ load_fac += 100) {
+    for (int load_fac = 1; load_fac <= 20; load_fac = load_fac == 1 ? 5 : load_fac + 5) {
         printf("\nPerformance Testing file with load factor %d: %s on fine-grained lock-based hash table\n", load_fac, filename.c_str());
         parseText(filename.c_str());
         baseline = new SeqHashTable<int, int>(200000/load_fac, &hash);
