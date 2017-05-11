@@ -9,6 +9,9 @@
 #include "seq_hash_table.h"
 #include "fg_hash_table.h"
 #include "mem_leak_hash_table.h"
+#include "haz_ptr_hash_table.h"
+#include "tools/cds-2.2.0/build/include/cds/init.h"
+#include "tools/cds-2.2.0/build/include/cds/gc/hp.h"
 
 #define MAX_THREADS 64
 
@@ -25,6 +28,7 @@ static std::vector<std::pair<Instr, std::pair<int, int> > > input;
 SeqHashTable<int, int>* baseline;
 FgHashTable<int, int>* htable;
 MemLeakHashTable<int, int>* lockFreeTable;
+HazPtrHashTable<int, int>* hazPtrTable;
 
 std::string filename = "tests/load_factor_test.txt";
 
@@ -75,6 +79,39 @@ void parseText(const std::string &filename)
             input.push_back(task);
         }
     }
+}
+
+void* hazPtrRun(void *arg) {
+    // Attach the thread to libcds infrastructure
+    cds::threading::Manager::attachThread();
+    int id = *(int*)arg;
+    int instrPerThread = input.size() / numThreads;
+    int start = instrPerThread * id;
+    int end = (start + instrPerThread < input.size()) ? (start + instrPerThread) : input.size();
+    for (int i = start; i < end; i++)
+    {
+        std::pair<Instr, std::pair<int, int> > instr = input[i];
+        switch(instr.first)
+        {
+            case insert:
+                // printf("Thread %d insert: %d\n", id, instr.second.first);
+                hazPtrTable->insert(instr.second.first, instr.second.second, id);
+                break;
+            case del:
+                // printf("Thread %d delete: %d\n", id, instr.second.first);
+                hazPtrTable->remove(instr.second.first, id);
+                break;
+            case lookup:
+                // printf("Thread %d lookup: %d\n", id, instr.second.first);
+                hazPtrTable->find(instr.second.first, id);
+                break;
+            default:
+                break;
+        }
+    }
+    // Detach thread when terminating
+    cds::threading::Manager::detachThread();
+    pthread_exit(NULL);
 }
 
 void* lockFreeRun(void* arg) {
@@ -216,6 +253,36 @@ int main() {
                 delete(lockFreeTable);
             }
             printf("%d Thread Lock-Free with Memory Leaks Test completed in %f ms!\n", numThreads, (1000.f * bestDt));
+            printf("%d Thread Speedup: %f\n", j, (baseTime / bestDt));
+        }
+        printf("\nPerformance Testing file with load factor %d: %s on lock-free hash table with hazard pointers\n", load_fac, filename.c_str());
+        for (uint j = 1; j <= MAX_THREADS; j *= 2)
+        {
+            double bestDt = 0;
+            for (int a = 0; a < 5; a++) {
+                cds::Initialize();
+                {
+                    cds::gc::HP hpGC(MAX_THREADS*3, 50);
+                    cds::threading::Manager::attachThread();
+
+                    hazPtrTable = new HazPtrHashTable<int, int>(200000/load_fac, &hash);
+                    numThreads = j;
+                    double startTime = CycleTimer::currentSeconds();
+                    for (uint id = 0; id < j; id++)
+                    {
+                        pthread_create(&threads[id], NULL, hazPtrRun, &ids[id]);
+                    }
+                    for (uint id = 0; id < j; id++)
+                    {
+                        pthread_join(threads[id], NULL);
+                    }
+                    double dt = CycleTimer::currentSeconds() - startTime;
+                    bestDt = bestDt == 0 ? dt : std::min(bestDt, dt);
+                    delete(hazPtrTable);
+                }
+                cds::Terminate();
+            }
+            printf("%d Thread Hazard Pointer Test completed in %f ms!\n", numThreads, (1000.f * bestDt));
             printf("%d Thread Speedup: %f\n", j, (baseTime / bestDt));
         }
         delete(baseline);
