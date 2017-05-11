@@ -1,9 +1,9 @@
-all: myht correctness hazptr dcas
+all: myht correctness hazptr dcas loadfactor
 
-myht: perfTest.cpp fg_hash_table.h seq_hash_table.h mem_leak_hash_table.h haz_ptr_hash_table.h tools/linked_list_node.h
+myht: perfTest.cpp fg_hash_table.h seq_hash_table.h mem_leak_hash_table.h tools/linked_list_node.h
 	g++ perfTest.cpp -o myht -lpthread
 
-correctness: correctnessTest.cpp fg_hash_table.h seq_hash_table.h mem_leak_hash_table.h haz_ptr_hash_table.h tools/linked_list_node.h
+correctness: correctnessTest.cpp fg_hash_table.h seq_hash_table.h mem_leak_hash_table.h tools/linked_list_node.h
 	g++ correctnessTest.cpp -o correctness -lpthread
 
 hazptr: hazPtrTest.cpp haz_ptr_hash_table.h seq_hash_table.h tools/linked_list_node.h
@@ -12,5 +12,8 @@ hazptr: hazPtrTest.cpp haz_ptr_hash_table.h seq_hash_table.h tools/linked_list_n
 dcas: x86Test.cpp dcas_hash_table.h seq_hash_table.h tools/linked_list_node.h tools/dcas_node.h
 	g++ -std=c++11 -m32 -mcx16 x86Test.cpp -o dcas -lpthread
 
+loadfactor: loadFactorTest.cpp fg_hash_table.h seq_hash_table.h mem_leak_hash_table.h tools/linked_list_node.h
+	g++ loadFactorTest.cpp -o loadfactor -lpthread
+
 clean:
-	rm -f *.o perf correctness hazptr dcas
+	rm -f *.o perf correctness hazptr dcas loadfactor
