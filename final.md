@@ -24,8 +24,11 @@ One of our memory managing hash table implementations that also prevented the AB
 
 ### Results
 Since we based our lock-free solution off [this research paper](http://www.research.ibm.com/people/m/michael/spaa-2002.pdf), we wanted to replicate the graphs they provided to see if our implementation achieved the same or better results.
+
 <img src="lf1_avg_ops.png" width="350"/> <img src="loadfac1_research.png" width="350"/>
+
 <img src="lf5_avg_ops.png" width="350"/> <img src="loadfac5_research.png" width="350"/>
+
 <img src="lf10_avg_ops.png" width="350"/> <img src="loadfac10_research.png" width="350"/>
 
 ### Preliminary Results
