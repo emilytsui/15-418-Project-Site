@@ -27,7 +27,6 @@ const char *args1[] = {"tests/correctness1.txt",
 std::vector<std::string> corrtestfiles(args1, args1 + sizeof(args1)/sizeof(args1[0]));
 
 const char *args2[] = {"tests/uniform_all_test.txt",
-                      "tests/chunked_all.txt",
                       "tests/30p_del_all.txt",
                       "tests/25p_del_all.txt",
                       "tests/20p_del_all.txt",
