@@ -52,6 +52,11 @@ This graph shows our results for an average load factor of 5 on a file with 10% 
 <img src="lf10_avg_ops.png" width="500"/> <img src="loadfac10_research.png" width="350"/>
 This graph shows our results for an average load factor of 10 on a file with 10% deletes, 10% inserts, and 80% lookups.
 
+Next, we decided to look at speedups obtained when looking at the time it took to complete all operations in a test file as load factors increased. For each implementation, we compared the total time it took to complete the operations on 16 threads to the time it took for the single-threaded sequential hash table to complete the operations. For our "DCAS" implementation, we compared that to our sequential hash table built for an x86 machine to get an accurate relative speedup.
+
+<img src="load_factor_plot.png" width="500"/>
+As expected, the memory leak implementation is scaling well in relation to increased load factor because even in growing contention for the buckets, multiple threads can still make progress simultaneously. However, we see that the fine-grain lock implementation is getting approximately exponentially slower, which is what we expect because when there is higher contention for the buckets, still only one thread can hold the bucket's lock at a time. The hazard pointer implementation is actually getting slower with more threads, and we believe this to be because of false sharing with both the guard array that holds the hazard pointers and the retire array that holds pointers to be freed. While each thread has its own slots in the guard array, the whole array is still global, meaning multiple threads from different cores trying to access it will cause false sharing. Additionally, the retire array is also global, and while its actual implementation is handled by the library we use, ...............................................
+
 ### Preliminary Results
 We found in our preliminary research that inserts and deletes are the most commonly performed operations. Thus for our tests with various percentages of deletes and inserts & lookups happening with the same likelihood, our results were:
 ![30% Delete Plot](30p_del_plot.png)
