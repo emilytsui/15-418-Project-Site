@@ -35,7 +35,6 @@ private:
         HPNode<K,V>* prev = head;
         HPNode<K,V>* curr = prev->get_next();
         std::pair<HPNode<K,V>*, HPNode<K,V>*> res;
-        // guards.protect(3*id+1, prev->next);
         guards.assign(3*id+1, curr);
         if ((unmarked(prev))->get_next() != curr)
         {
@@ -50,7 +49,6 @@ private:
                 return res;
             }
             HPNode<K,V>* next = (unmarked(curr))->get_next();
-            // guards.protect(3*id, (unmarked(curr))->next);
             guards.assign(3*id, next);
             if ((unmarked(curr))->get_next() != next) {
                 goto try_again;
@@ -69,15 +67,12 @@ private:
                     res.second = curr;
                     return res;
                 }
-                // guards.protect(3*id+2, prev->next);
                 guards.assign(3*id+2, curr);
                 prev = curr;
-                // *&hazardPtrs[3*id+2] = curr;
             }
             else
             {
                 if (prev->next == curr && __sync_bool_compare_and_swap(&(prev->next), curr, unmarked(next))) {
-                // if ((prev->next).compare_exchange_weak(curr, unmarked(next))) {
                     // garbage collection - delete(curr)
                     cds::gc::HP::retire< disposer< HPNode<K,V> > >(curr);
                 }
@@ -86,10 +81,8 @@ private:
                     goto try_again;
                 }
             }
-            // guards.protect(3*id+1, unmarked(curr)->next);
             guards.assign(3*id+1, next);
             curr = next;
-            // *&hazardPtrs[3*id+1] = next;
         }
     }
 
@@ -103,7 +96,6 @@ public:
         table_size = num_buckets;
         hash_fn = hash;
         table = std::vector< HPNode<K,V>* >(num_buckets, NULL);
-        // table.resize(num_buckets); // dummy values
         for (int i = 0; i < num_buckets; i++)
         {
             table[i] = new HPNode<K, V>(0, 0);
@@ -130,7 +122,6 @@ public:
             // printf("Curr: %p\n", curr);
             // printf("New node: %p\n", node);
             if (prev->next == curr && __sync_bool_compare_and_swap(&(prev->next), curr, node))
-            // if ((prev->next).compare_exchange_weak(curr, node))
             {
                 result = true;
                 break;
@@ -160,13 +151,11 @@ public:
             }
             HPNode<K,V>* next = unmarked(curr)->get_next();
             if (!is_marked(next) &&
-                // !(unmarked(curr)->next).compare_exchange_weak(next, marked(next)))
                 !__sync_bool_compare_and_swap(&(unmarked(curr)->next), next, marked(next)))
             {
                 continue;
             }
             if (unmarked(prev)->next == curr && __sync_bool_compare_and_swap(&(unmarked(prev)->next), curr, next)) {
-            // if ((unmarked(prev)->next).compare_exchange_weak(curr, next)) {
                 // garbage collection - delete(curr)
                 cds::gc::HP::retire< disposer< HPNode<K,V> > >(curr);
             }
