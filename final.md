@@ -103,3 +103,7 @@ Scaling this performance to real-world applications where inserts and lookups ar
 <img src="10p_del_plot.png" width="500"/>
 
 It is evident that this workload also achieves all the same great features obtained in the previous test setting.
+
+### References
+- Maged M. Michael. High Performance Dynamic Lock-Free Hash Tables and List-Based Sets. http://www.research.ibm.com/people/m/michael/spaa-2002.pdf
+- `libcds` Library. https://github.com/khizmax/libcds / http://libcds.sourceforge.net/doc/cds-api/index.html
