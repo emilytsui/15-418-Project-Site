@@ -260,7 +260,7 @@ int main() {
             double bestTime = std::numeric_limits<double>::max();
             for (int i = 0; i < 5; i++)
             {
-                dcasTable = new DCASHashTable<int, int>(10000, &hash);
+                dcasTable = new DCASHashTable<int, int>(200000/load_fac, &hash);
                 numThreads = j;
                 auto startTime = std::chrono::high_resolution_clock::now();
                 // printf("Start time: %f\n", startTime);
@@ -287,7 +287,7 @@ int main() {
     }
 
     for (int load_fac = 250; load_fac <= 1000; load_fac *= 2) {
-        printf("\nPerformance Testing file with load factor %d: %s on fine-grained lock-based hash table\n", load_fac, filename.c_str());
+        printf("\nPerformance Testing file with load factor %d: %s on DCAS lock free hash table\n", load_fac, filename.c_str());
         parseText(filename.c_str());
         baseline = new SeqHashTable<int, int>(200000/load_fac, &hash);
         baseTime = seqRun(baseline);
@@ -296,7 +296,7 @@ int main() {
             double bestTime = std::numeric_limits<double>::max();
             for (int i = 0; i < 5; i++)
             {
-                dcasTable = new DCASHashTable<int, int>(10000, &hash);
+                dcasTable = new DCASHashTable<int, int>(200000/load_fac, &hash);
                 numThreads = j;
                 auto startTime = std::chrono::high_resolution_clock::now();
                 // printf("Start time: %f\n", startTime);
