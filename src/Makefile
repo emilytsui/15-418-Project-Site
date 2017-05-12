@@ -1,4 +1,4 @@
-all: myht correctness hazptr dcas loadfactor
+all: myht correctness hazptr dcas loadfactor cputime
 
 myht: perfTest.cpp fg_hash_table.h seq_hash_table.h mem_leak_hash_table.h tools/linked_list_node.h
 	g++ perfTest.cpp -o myht -lpthread
@@ -15,6 +15,8 @@ dcas: x86Test.cpp dcas_hash_table.h seq_hash_table.h tools/linked_list_node.h to
 loadfactor: loadFactorTest.cpp fg_hash_table.h seq_hash_table.h mem_leak_hash_table.h tools/linked_list_node.h
 	g++ -std=c++11 -I./tools/cds-2.2.0/build/include loadFactorTest.cpp -o loadfactor -lpthread -L./tools/cds-2.2.0/build/lib64 -lcds -fno-strict-aliasing
 
+cputime: avgCPUTimeTest.cpp fg_hash_table.h seq_hash_table.h mem_leak_hash_table.h tools/linked_list_node.h
+	g++ -std=c++11 -I./tools/cds-2.2.0/build/include avgCPUTimeTest.cpp -o cputime -lpthread -L./tools/cds-2.2.0/build/lib64 -lcds -fno-strict-aliasing
 
 clean:
-	rm -f *.o perf correctness hazptr dcas loadfactor
+	rm -f *.o perf correctness hazptr dcas loadfactor cputime

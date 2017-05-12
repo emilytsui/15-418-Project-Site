@@ -257,7 +257,7 @@ int main() {
             printf("%d Thread Speedup: %f\n", j, (baseTime / bestDt));
         }
         printf("\nPerformance Testing file with load factor %d: %s on lock-free hash table with hazard pointers\n", load_fac, filename.c_str());
-        for (uint j = 1; j <= MAX_THREADS; j *= 2)
+        for (uint j = 1; j <= 64; j *= 2)
         {
             double bestDt = 0;
             for (int a = 0; a < 5; a++) {
