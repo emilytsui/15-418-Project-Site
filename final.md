@@ -53,6 +53,14 @@ This graph shows our results for an average load factor of 5 on a file with 10% 
 <img src="lf10_avg_ops.png" width="500"/> <img src="loadfac10_research.png" width="350"/>
 This graph shows our results for an average load factor of 10 on a file with 10% deletes, 10% inserts, and 80% lookups.
 
+While the research paper only displayed their results with average CPU time of all operations, we were interested in breaking it down more to determine which specific operations (insert, delete, lookup) took the most time.
+
+<img src="lf10_inserts.png" width="500"/>
+
+<img src="lf10_deletes.png" width="500"/>
+
+<img src="lf10_lookups.png" width="500"/>
+
 Next, we decided to look at speedups obtained when looking at the time it took to complete all operations in a test file as load factors increased. For each implementation, we compared the total time it took to complete the operations on 16 threads to the time it took for the single-threaded sequential hash table to complete the operations. For our x86 CAS implementation, we compared that to our sequential hash table built for an x86 machine to get an accurate relative speedup.
 
 <img src="load_factor_plot.png" width="500"/>
