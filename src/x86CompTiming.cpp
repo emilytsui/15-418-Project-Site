@@ -245,70 +245,86 @@ int main() {
     double baseTime;
     seqTimes.resize(3);
     seqInstr.resize(3);
-    for (uint i = 0; i < perftestfiles.size(); i++) {
-        printf("\nPerformance Testing file: %s on DCAS lock-free hash table\n", perftestfiles[i].c_str());
-        parseText(perftestfiles[i].c_str());
-        baseline = new SeqHashTable<int, int>(10000, &hash);
-        baseTime = seqRun(baseline);
-        printf("Seq: Average Insert Time %f\n", seqTimes[0] / seqInstr[0]);
-        printf("Seq: Average Lookup Time %f\n", seqTimes[1] / seqInstr[1]);
-        printf("Seq: Average Delete Time %f\n", seqTimes[2] / seqInstr[2]);
-        printf("Seq: Average Operation Time %f\n", (seqTimes[0] + seqTimes[1] + seqTimes[2]) / (seqInstr[0] + seqInstr[1] + seqInstr[2]));
-        for (uint j = 1; j <= 64; j *= 2)
-        {
-            double bestTime = std::numeric_limits<double>::max();
-            for (int i = 0; i < 5; i++)
+    for (int load_fac = 1; load_fac <= 20; load_fac = load_fac == 1 ? 5 : load_fac + 5) {
+        for (uint k = 0; k < perftestfiles.size(); k++) {
+            printf("\nPerformance Testing file with load factor %d: %s on DCAS lock free hash table\n", load_fac, perftestfiles[k].c_str());
+            parseText(perftestfiles[k].c_str());
+            if (k == 0)
             {
-                dcasTable = new DCASHashTable<int, int>(10000, &hash);
-                numThreads = j;
-                multiTimes.resize(3*numThreads);
-                multiInstr.resize(3*numThreads);
-                auto startTime = std::chrono::high_resolution_clock::now();
-                // printf("Start time: %f\n", startTime);
-                for (uint id = 0; id < j; id++)
-                {
-                    pthread_create(&threads[id], NULL, dcasRun, &ids[id]);
-                }
-                for (uint id = 0; id < j; id++)
-                {
-                    pthread_join(threads[id], NULL);
-                }
-                std::chrono::duration<double, std::milli> fp_ms = (std::chrono::high_resolution_clock::now() - startTime);
-                double dt = fp_ms.count();
-                if (dt < bestTime)
-                {
-                    bestTime = dt;
-                }
-                delete(dcasTable);
+                baseline = new SeqHashTable<int, int>(50000/load_fac, &hash);
             }
-            printf("%d Thread DCAS lock-free Test completed in %f ms!\n", numThreads, bestTime);
-            printf("%d Thread Speedup: %f\n", j, (baseTime / bestTime));
-            double insertTime = 0;
-            double deleteTime = 0; 
-            double lookupTime = 0;
-            double totalIns = 0;
-            double totalDel = 0;
-            double totalLookup = 0;
-            for (int k = 0; k < numThreads; k++)
+            else
             {
-                insertTime += multiTimes[k*3];
-                totalIns += multiInstr[k*3];
-                lookupTime += multiTimes[k*3 + 1];
-                totalLookup += multiInstr[k*3 + 1];
-                deleteTime += multiTimes[k*3 + 2];
-                totalDel += multiInstr[k*3 + 2];
+                baseline = new SeqHashTable<int, int>(100000/load_fac, &hash);
             }
-            printf("%d Thread: Average Insert Time %f\n", j, insertTime / totalIns);
-            printf("%d Thread: Average Lookup Time %f\n", j, lookupTime / totalLookup);
-            printf("%d Thread: Average Delete Time %f\n", j, deleteTime / totalDel);
-            printf("%d Thread: Average Operation Time %f\n", j, (insertTime + lookupTime + deleteTime) / (totalIns + totalLookup + totalDel));
+            baseTime = seqRun(baseline);
+            printf("Seq: Average Insert Time %f\n", seqTimes[0] / seqInstr[0]);
+            printf("Seq: Average Lookup Time %f\n", seqTimes[1] / seqInstr[1]);
+            printf("Seq: Average Delete Time %f\n", seqTimes[2] / seqInstr[2]);
+            printf("Seq: Average Operation Time %f\n", (seqTimes[0] + seqTimes[1] + seqTimes[2]) / (seqInstr[0] + seqInstr[1] + seqInstr[2]));
+            for (uint j = 1; j <= 64; j *= 2)
+            {
+                double bestTime = std::numeric_limits<double>::max();
+                for (int i = 0; i < 5; i++)
+                {
+                    if (k == 0)
+                    {
+                        dcasTable = new DCASHashTable<int, int>(50000/load_fac, &hash);
+                    }
+                    else
+                    {
+                        dcasTable = new DCASHashTable<int, int>(100000/load_fac, &hash);
+                    }
+                    numThreads = j;
+                    multiTimes.resize(3*numThreads);
+                    multiInstr.resize(3*numThreads);
+                    auto startTime = std::chrono::high_resolution_clock::now();
+                    // printf("Start time: %f\n", startTime);
+                    for (uint id = 0; id < j; id++)
+                    {
+                        pthread_create(&threads[id], NULL, dcasRun, &ids[id]);
+                    }
+                    for (uint id = 0; id < j; id++)
+                    {
+                        pthread_join(threads[id], NULL);
+                    }
+                    std::chrono::duration<double, std::milli> fp_ms = (std::chrono::high_resolution_clock::now() - startTime);
+                    double dt = fp_ms.count();
+                    if (dt < bestTime)
+                    {
+                        bestTime = dt;
+                    }
+                    delete(dcasTable);
+                }
+                printf("%d Thread DCAS lock-free Test completed in %f ms!\n", numThreads, bestTime);
+                printf("%d Thread Speedup: %f\n", j, (baseTime / bestTime));
+                double insertTime = 0;
+                double deleteTime = 0; 
+                double lookupTime = 0;
+                double totalIns = 0;
+                double totalDel = 0;
+                double totalLookup = 0;
+                for (int k = 0; k < numThreads; k++)
+                {
+                    insertTime += multiTimes[k*3];
+                    totalIns += multiInstr[k*3];
+                    lookupTime += multiTimes[k*3 + 1];
+                    totalLookup += multiInstr[k*3 + 1];
+                    deleteTime += multiTimes[k*3 + 2];
+                    totalDel += multiInstr[k*3 + 2];
+                }
+                printf("%d Thread: Average Insert Time %f\n", j, insertTime / totalIns);
+                printf("%d Thread: Average Lookup Time %f\n", j, lookupTime / totalLookup);
+                printf("%d Thread: Average Delete Time %f\n", j, deleteTime / totalDel);
+                printf("%d Thread: Average Operation Time %f\n", j, (insertTime + lookupTime + deleteTime) / (totalIns + totalLookup + totalDel));
+            }
+            delete(baseline);
         }
-        delete(baseline);
     }
 
     std::string filename = "tests/load_factor_test.txt";
     for (int load_fac = 1; load_fac <= 20; load_fac = load_fac == 1 ? 5 : load_fac + 5) {
-        printf("\nPerformance Testing file with load factor %d: %s on fine-grained lock-based hash table\n", load_fac, filename.c_str());
+        printf("\nPerformance Testing file with load factor %d: %s on DCAS lock free hash table\n", load_fac, filename.c_str());
         parseText(filename.c_str());
         baseline = new SeqHashTable<int, int>(200000/load_fac, &hash);
         baseTime = seqRun(baseline);
@@ -321,7 +337,7 @@ int main() {
             double bestTime = std::numeric_limits<double>::max();
             for (int i = 0; i < 5; i++)
             {
-                dcasTable = new DCASHashTable<int, int>(10000, &hash);
+                dcasTable = new DCASHashTable<int, int>(200000/load_fac, &hash);
                 numThreads = j;
                 multiTimes.resize(3*numThreads);
                 multiInstr.resize(3*numThreads);
