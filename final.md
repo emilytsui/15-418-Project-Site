@@ -117,3 +117,5 @@ So, the overall decision on lock-free vs. fine-grained and if lock-free which im
 ### References
 - Maged M. Michael. High Performance Dynamic Lock-Free Hash Tables and List-Based Sets. http://www.research.ibm.com/people/m/michael/spaa-2002.pdf
 - `libcds` Library. https://github.com/khizmax/libcds / http://libcds.sourceforge.net/doc/cds-api/index.html
+
+Equal work was performed by both project members.
