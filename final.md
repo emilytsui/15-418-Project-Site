@@ -53,13 +53,24 @@ This graph shows our results for an average load factor of 5 on a file with 10% 
 <img src="lf10_avg_ops.png" width="500"/> <img src="loadfac10_research.png" width="350"/>
 This graph shows our results for an average load factor of 10 on a file with 10% deletes, 10% inserts, and 80% lookups.
 
-While the research paper only displayed their results with average CPU time of all operations, we were interested in breaking it down more to determine which specific operations (insert, delete, lookup) took the most time.
+While the research paper only displayed their results with average CPU time of all operations, we were interested in breaking it down more to determine which specific operations (insert, delete, lookup) took the most time. Thus, we took the average time in microseconds for each individual operations, using an average load factor of 10 on the same file as above with 10% deletes, 10% inserts, and 80% lookups. Here, we decided to scale up to 64 threads to see the behavior of the lock-based implementation when we have more threads than execution contexts. Later, we will see a graph when the load factor is much larger, emphasizing the fact that when a thread for the lock-based implementation is switched out yet holds a lock, it slows down the average time per each operation.
 
 <img src="lf10_inserts.png" width="500"/>
+Interestingly, while the hazard pointer performed consistently worse for the average CPU times above, when we break down the average time per insert, the hazard pointer implementation is faster on average for inserts than both the lock-free memory leak version and the fine-grain lock hash table.
 
 <img src="lf10_deletes.png" width="500"/>
+Here, we see what we expect to see where the time per delete for the hazard pointer implementation is much slower than for the other two hash table implementations. With the overhead of assigning to a guard array, as well as each thread performing a set difference when its retire array fills up, this slower operation time is to be expected. There seems to be minimal difference between the operation times for the memory leak and fine-grain implementations. This is likely because the load factor is small enough that there still isn't much contention simultaneously for the same buckets. Thus, the fine-grained implementation stil performs relatively well for deletes.
 
 <img src="lf10_lookups.png" width="500"/>
+For lookup, we see similar results as we did in deletes with a small improvement in the hazard pointer case, likely due to the overhead during deleting of having to perform a set difference for the retire array.
+
+Next we decided to greatly increase the load factor, while still looking at the breakdowns of average time per individual operation.
+
+<img src="lf1000_inserts.png" width="500"/>
+
+<img src="lf1000_inserts.png" width="500"/>
+
+<img src="lf1000_inserts.png" width="500"/>
 
 Next, we decided to look at speedups obtained when looking at the time it took to complete all operations in a test file as load factors increased. For each implementation, we compared the total time it took to complete the operations on 16 threads to the time it took for the single-threaded sequential hash table to complete the operations. For our x86 CAS implementation, we compared that to our sequential hash table built for an x86 machine to get an accurate relative speedup.
 
