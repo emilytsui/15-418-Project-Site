@@ -104,6 +104,15 @@ Scaling this performance to real-world applications where inserts and lookups ar
 
 It is evident that this workload also achieves all the same great features obtained in the previous test setting.
 
+Although the “DCAS” x86 and hazard pointer implementations suffered from memory management overhead in the previous cases, there are instances where these implementations scale better than the fine grained and memory leak implementations.
+
+<img src="Uniform_plot.png" width="500"/>
+
+As seen in the above graph, under a workload with uniform percentages of inserts, lookup, and deletes both the hazard pointer implementation and the x86 CAS implementation scale with larger thread counts. The “DCAS” x86 implementation scales so well that it performs even better than the fine grained and memory leak implementations that performed better in most of the other cases.
+
+So, the overall decision on lock-free vs. fine-grained and if lock-free which implementation comes down to two major factors: workload characteristics and memory management scheme (dynamic vs. bulk frees)
+
+
 ### References
 - Maged M. Michael. High Performance Dynamic Lock-Free Hash Tables and List-Based Sets. http://www.research.ibm.com/people/m/michael/spaa-2002.pdf
 - `libcds` Library. https://github.com/khizmax/libcds / http://libcds.sourceforge.net/doc/cds-api/index.html
