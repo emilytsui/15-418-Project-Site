@@ -98,3 +98,8 @@ Under the same workload, we observe the following performances:
 
 As evident, both the fine grained and memory leak implementations see great speedups up to 16 threads indicative of the instructions that are executed simultaneously by the multiple threads. Moreover, the memory leak implementation’s speedup in this region is larger than the fine grained lock version due to the ability to execute multiple instructions on the same hash bucket at the same time. Beyond 16 threads, both the fine grained and memory leak implementations see a decrease in speedup since 16 threads is the maximum hardware execution contexts available on the 8 core hyperthreaded GHC machines. However, the memory leak implementation maintains an upper hand when scaled beyond 16 threads because the thread with the lock in the fine grained implementation being scheduled out would mean that no progress can be made on that bucket when this is not an issue in the fine grained. Both the “DCAS” x86 and the hazard pointer implementations show promise in scaling beyond 16 threads by maintaining the same high speedup although this speedup is low relative to fine grained and memory leak due to memory management overhead.
 
+Scaling this performance to real-world applications where inserts and lookups are the most frequent with a much smaller percentage of deletes (10% deletes, 45% inserts, 45% lookups), we see the following results:
+
+<img src="10p_del_plot.png" width="500"/>
+
+It is evident that this workload also achieves all the same great features obtained in the previous test setting.
