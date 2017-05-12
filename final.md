@@ -24,9 +24,9 @@ One of our memory managing hash table implementations that also prevented the AB
 
 ### Results
 Since we based our lock-free solution off [this research paper](http://www.research.ibm.com/people/m/michael/spaa-2002.pdf), we wanted to replicate the graphs they provided to see if our implementation achieved the same or better results.
-<img src="lf1_avg_ops.png" width="400"/> <img src="loadfac1_research.png" width="400"/>
-<img src="lf5_avg_ops.png" width="400"/> <img src="loadfac5_research.png" width="400"/>
-<img src="lf10_avg_ops.png" width="400"/> <img src="loadfac10_research.png" width="400"/>
+<img src="lf1_avg_ops.png" width="350"/> <img src="loadfac1_research.png" width="350"/>
+<img src="lf5_avg_ops.png" width="350"/> <img src="loadfac5_research.png" width="350"/>
+<img src="lf10_avg_ops.png" width="350"/> <img src="loadfac10_research.png" width="350"/>
 
 ### Preliminary Results
 We found in our preliminary research that inserts and deletes are the most commonly performed operations. Thus for our tests with various percentages of deletes and inserts & lookups happening with the same likelihood, our results were:
